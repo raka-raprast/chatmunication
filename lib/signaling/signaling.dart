@@ -1,7 +1,7 @@
 import 'dart:convert';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class Signaling {
   final String serverUrl;
@@ -12,22 +12,31 @@ class Signaling {
   late RTCPeerConnection _peerConnection;
   final localRenderer = RTCVideoRenderer();
   final remoteRenderer = RTCVideoRenderer();
+  final localStreamReady = ValueNotifier<bool>(false);
+  final remoteStreamReady = ValueNotifier<bool>(false);
+  final VoidCallback? onPeerDisconnected;
+
+  bool _isReady = false;
+  bool _otherReady = false;
+  late bool isCaller;
+  final String callType;
 
   Signaling({
     required this.serverUrl,
     required this.roomId,
     required this.token,
+    required this.callType,
+    this.onPeerDisconnected,
   });
 
   Future<void> initRenderers() async {
-    await localRenderer.initialize();
-    await remoteRenderer.initialize();
+    if (callType == 'video') {
+      await localRenderer.initialize();
+      await remoteRenderer.initialize();
+    }
   }
 
-  bool hasMadeOffer = false;
-
   Future<void> connect() async {
-    // 💡 Set this first to avoid uninitialized access
     final uri = Uri.parse('$serverUrl/ws?token=$token&room=$roomId');
     _channel = WebSocketChannel.connect(uri);
 
@@ -37,6 +46,14 @@ class Signaling {
     });
 
     await _createPeerConnection();
+
+    _send({'type': 'ready'});
+    _isReady = true;
+
+    if (isCaller && _otherReady) {
+      print("📞 Caller: both ready, making offer...");
+      await makeOffer();
+    }
   }
 
   Future<void> _createPeerConnection() async {
@@ -60,38 +77,70 @@ class Signaling {
     _peerConnection.onTrack = (event) {
       print("🟢 Received track: ${event.track.kind}");
       if (event.streams.isNotEmpty) {
-        remoteRenderer.srcObject = event.streams[0];
+        if (callType == 'video') {
+          remoteRenderer.srcObject = event.streams[0];
+        }
+        remoteStreamReady.value = true;
       }
     };
 
     _peerConnection.onConnectionState = (state) {
       print("🟡 Connection state: $state");
-      if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
-          state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected ||
-          state == RTCPeerConnectionState.RTCPeerConnectionStateClosed) {
-        // Maybe retry or alert user
-        print("🔴 PeerConnection closed or failed");
+
+      if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected ||
+          state == RTCPeerConnectionState.RTCPeerConnectionStateClosed ||
+          state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
+        print("🔴 Peer disconnected. Calling onPeerDisconnected...");
+        resetRemoteRenderer();
+        onPeerDisconnected?.call();
       }
     };
 
     final stream = await navigator.mediaDevices.getUserMedia({
       'audio': true,
-      'video': true,
+      'video': callType == 'video',
     });
+
     print(
         "🎥 Got local stream. Video tracks: ${stream.getVideoTracks().length}");
-
-    localRenderer.srcObject = stream;
+    if (callType == 'video') {
+      localRenderer.srcObject = stream;
+    }
+    localStreamReady.value = true;
 
     for (var track in stream.getTracks()) {
       _peerConnection.addTrack(track, stream);
     }
   }
 
+  void resetRemoteRenderer() {
+    _otherReady = false;
+    remoteRenderer.srcObject = null;
+    remoteStreamReady.value = false;
+  }
+
   void _handleSignaling(Map<String, dynamic> data) async {
-    print(
-        "📩 Received ${data['type']}: ${data['sdp']?.toString().contains("m=video") == true ? "includes video" : "NO VIDEO"}");
     switch (data['type']) {
+      case 'join_ack':
+        final userCount = data['userCount'] as int;
+        isCaller = userCount == 1;
+        print("📲 Role decided: ${isCaller ? 'Caller' : 'Callee'}");
+
+        _send({'type': 'ready'});
+        _isReady = true;
+        if (isCaller && _otherReady) {
+          await makeOffer();
+        }
+        break;
+
+      case 'ready':
+        _otherReady = true;
+        print("✅ Peer is ready");
+        if (isCaller && _isReady) {
+          await makeOffer();
+        }
+        break;
+
       case 'offer':
         await _peerConnection
             .setRemoteDescription(RTCSessionDescription(data['sdp'], 'offer'));
@@ -113,6 +162,11 @@ class Signaling {
         );
         await _peerConnection.addCandidate(candidate);
         break;
+      case 'user_left':
+        print("👋 Peer has left the call");
+        resetRemoteRenderer();
+        onPeerDisconnected?.call();
+        break;
     }
   }
 
@@ -130,6 +184,7 @@ class Signaling {
   }
 
   void dispose() {
+    _send({'type': 'leave'});
     _peerConnection.close();
     _channel.sink.close();
     localRenderer.dispose();

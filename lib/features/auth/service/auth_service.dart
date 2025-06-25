@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'package:chatmunication/features/users/user.dart';
 import 'package:http/http.dart' as http;
 
 class AuthService {
   final String baseUrl =
       'http://192.168.100.113:2340/auth'; // Change for production
 
-  Future<String?> register(String username, String password) async {
+  Future<User?> register(String username, String password) async {
     final res = await http.post(
       Uri.parse('$baseUrl/register'),
       headers: {'Content-Type': 'application/json'},
@@ -24,8 +25,7 @@ class AuthService {
     return null;
   }
 
-  Future<String?> login(String username, String password) async {
-    log("heyoo");
+  Future<User?> login(String username, String password) async {
     final res = await http.post(
       Uri.parse('$baseUrl/login'),
       headers: {'Content-Type': 'application/json'},
@@ -35,11 +35,14 @@ class AuthService {
       }),
     );
 
-    log(res.body);
-
     if (res.statusCode == 200) {
       final data = jsonDecode(res.body);
-      return data['token']; // Token returned from backend
+      return User.fromJson({
+        'id': data['user']['id'],
+        'username': data['user']['username'],
+        'token': data['token'],
+        'profile_picture': data['user']['profile_picture'] ?? '',
+      });
     }
 
     return null;
