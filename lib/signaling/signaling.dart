@@ -15,6 +15,8 @@ class Signaling {
   final localStreamReady = ValueNotifier<bool>(false);
   final remoteStreamReady = ValueNotifier<bool>(false);
   final VoidCallback? onPeerDisconnected;
+  late MediaStream _localStream;
+  MediaStream get localStream => _localStream;
 
   bool _isReady = false;
   bool _otherReady = false;
@@ -106,6 +108,7 @@ class Signaling {
     if (callType == 'video') {
       localRenderer.srcObject = stream;
     }
+    _localStream = stream;
     localStreamReady.value = true;
 
     for (var track in stream.getTracks()) {
@@ -164,7 +167,9 @@ class Signaling {
         break;
       case 'user_left':
         print("👋 Peer has left the call");
-        resetRemoteRenderer();
+        if (callType == 'video') {
+          resetRemoteRenderer();
+        }
         onPeerDisconnected?.call();
         break;
     }

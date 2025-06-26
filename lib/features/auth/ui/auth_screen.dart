@@ -39,10 +39,8 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       User? user;
       if (isLogin) {
-        log("login");
         user = await authService.login(username, password);
       } else {
-        log("register");
         user = await authService.register(username, password);
       }
 

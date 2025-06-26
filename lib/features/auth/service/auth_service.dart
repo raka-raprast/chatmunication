@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:chatmunication/features/users/user.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   final String baseUrl =
@@ -37,14 +38,31 @@ class AuthService {
 
     if (res.statusCode == 200) {
       final data = jsonDecode(res.body);
-      return User.fromJson({
+
+      // Extract user data
+      final userData = {
         'id': data['user']['id'],
         'username': data['user']['username'],
         'token': data['token'],
         'profile_picture': data['user']['profile_picture'] ?? '',
-      });
+      };
+
+      // Save to SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user', jsonEncode(userData));
+
+      return User.fromJson(userData);
     }
 
+    return null;
+  }
+
+  Future<User?> getStoredUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userJson = prefs.getString('user');
+    if (userJson != null) {
+      return User.fromJson(jsonDecode(userJson));
+    }
     return null;
   }
 }

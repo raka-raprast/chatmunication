@@ -4,6 +4,7 @@ import 'package:chatmunication/features/call/call_screen.dart';
 import 'package:chatmunication/features/users/user.dart';
 import 'package:chatmunication/signaling/user_socket.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
 class MessageScreen extends StatefulWidget {
   final String currentUserId;
@@ -22,11 +23,27 @@ class MessageScreen extends StatefulWidget {
 }
 
 class _MessageScreenState extends State<MessageScreen> {
-  final List<Map<String, String>> _messages = [];
+  final List<dynamic> _messages = []; // can be message or timestamp marker
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _loading = true;
   bool _canSend = false;
+  DateTime? _lastMessageDate;
+
+  void _addMessageWithDateSeparator(Map<String, String> message) {
+    final currentMsgDate = DateTime.parse(message['timestamp']!);
+    final dateLabel = getDateLabel(currentMsgDate);
+
+    if (_lastMessageDate == null ||
+        _lastMessageDate!.year != currentMsgDate.year ||
+        _lastMessageDate!.month != currentMsgDate.month ||
+        _lastMessageDate!.day != currentMsgDate.day) {
+      _messages.add({'type': 'timestamp', 'label': dateLabel});
+      _lastMessageDate = currentMsgDate;
+    }
+
+    _messages.add(message);
+  }
 
   @override
   void initState() {
@@ -64,13 +81,15 @@ class _MessageScreenState extends State<MessageScreen> {
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         setState(() {
-          _messages.addAll(data.map<Map<String, String>>((msg) {
-            return {
+          _lastMessageDate = null;
+          for (var msg in data) {
+            _addMessageWithDateSeparator({
               'from': msg['FromUserID'],
               'content': msg['Content'],
               'timestamp': msg['Timestamp'],
-            };
-          }).toList());
+            });
+          }
+
           _loading = false;
         });
         _scrollToBottom();
@@ -91,7 +110,7 @@ class _MessageScreenState extends State<MessageScreen> {
     final timestamp = DateTime.now().toIso8601String();
 
     setState(() {
-      _messages.add({
+      _addMessageWithDateSeparator({
         'from': widget.currentUserId,
         'content': content,
         'timestamp': timestamp,
@@ -131,9 +150,42 @@ class _MessageScreenState extends State<MessageScreen> {
           roomId: roomId,
           userSocket: widget.userSocket,
           callType: callType,
+          otherUser: widget.otherUser,
+          isCaller: true,
         ),
       ),
     );
+  }
+
+  Widget _buildDateSeparator(String label) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+        ),
+      ),
+    );
+  }
+
+  String getDateLabel(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final messageDate = DateTime(date.year, date.month, date.day);
+
+    if (messageDate == today) {
+      return 'Today';
+    } else if (messageDate == today.subtract(const Duration(days: 1))) {
+      return 'Yesterday';
+    } else {
+      return DateFormat.yMMMMd().format(date); // Example: June 24, 2025
+    }
   }
 
   Widget _buildMessageBubble(Map<String, String> msg) {
@@ -141,6 +193,9 @@ class _MessageScreenState extends State<MessageScreen> {
     final alignment = isMe ? Alignment.centerRight : Alignment.centerLeft;
     final bgColor = isMe ? Colors.blue : Colors.grey.shade300;
     final textColor = isMe ? Colors.white : Colors.black87;
+
+    final time = DateFormat.Hm()
+        .format(DateTime.parse(msg['timestamp']!)); // e.g., 13:05
 
     return Align(
       alignment: alignment,
@@ -152,9 +207,22 @@ class _MessageScreenState extends State<MessageScreen> {
           color: bgColor,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Text(
-          msg['content'] ?? '',
-          style: TextStyle(color: textColor, fontSize: 15),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              msg['content'] ?? '',
+              style: TextStyle(color: textColor, fontSize: 15),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              time,
+              style: TextStyle(
+                fontSize: 11,
+                color: textColor.withOpacity(0.7),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -171,7 +239,20 @@ class _MessageScreenState extends State<MessageScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.otherUser.username),
+        title: Row(
+          children: [
+            CircleAvatar(
+              backgroundImage: widget.otherUser.profilePicture.isNotEmpty
+                  ? NetworkImage(widget.otherUser.profilePicture)
+                  : null,
+              child: widget.otherUser.profilePicture.isEmpty
+                  ? Text(widget.otherUser.username[0].toUpperCase())
+                  : null,
+            ),
+            SizedBox(width: 10),
+            Text(widget.otherUser.username),
+          ],
+        ),
         actions: [
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -189,7 +270,7 @@ class _MessageScreenState extends State<MessageScreen> {
                   title: Text('Voice Call'),
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'video',
                 child: ListTile(
                   leading: Icon(Icons.videocam),
@@ -206,15 +287,27 @@ class _MessageScreenState extends State<MessageScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : Scrollbar(
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      itemCount: _messages.length,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      itemBuilder: (context, index) {
-                        final msg = _messages[index];
-                        return _buildMessageBubble(msg);
-                      },
-                    ),
+                    child: _messages.isEmpty
+                        ? Center(
+                            child: Text(
+                                "Say something to ${widget.otherUser.username}"),
+                          )
+                        : ListView.builder(
+                            controller: _scrollController,
+                            itemCount: _messages.length,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            itemBuilder: (context, index) {
+                              final msg = _messages[index];
+                              if (_messages[index] is Map<String, String> &&
+                                  _messages[index]['type'] == 'timestamp') {
+                                return _buildDateSeparator(
+                                    _messages[index]['label']!);
+                              } else {
+                                return _buildMessageBubble(
+                                    _messages[index] as Map<String, String>);
+                              }
+                            },
+                          ),
                   ),
           ),
           const Divider(height: 1),
@@ -227,8 +320,13 @@ class _MessageScreenState extends State<MessageScreen> {
                   Expanded(
                     child: TextField(
                       controller: _controller,
+                      minLines: 1,
+                      maxLines: 7,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
                       decoration: InputDecoration(
                         hintText: 'Type a message...',
+                        isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 12),
                         border: OutlineInputBorder(
@@ -240,7 +338,6 @@ class _MessageScreenState extends State<MessageScreen> {
                           borderSide: BorderSide(color: Colors.grey.shade300),
                         ),
                       ),
-                      onSubmitted: (_) => _sendMessage(),
                     ),
                   ),
                   const SizedBox(width: 8),

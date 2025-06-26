@@ -51,7 +51,9 @@ class IncomingCallScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Incoming Call',
+                  callType == 'video'
+                      ? 'Incoming Video Call'
+                      : 'Incoming Audio Call',
                   style: TextStyle(
                     fontSize: 20,
                     color: Colors.grey.shade300,
@@ -93,6 +95,7 @@ class IncomingCallScreen extends StatelessWidget {
                               roomId: roomId,
                               userSocket: userSocket,
                               callType: callType,
+                              isCaller: false,
                             ),
                           ),
                         );

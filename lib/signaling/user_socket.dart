@@ -12,6 +12,8 @@ class UserSocketService {
   void Function(String roomId) onCallAccepted;
   void Function() onCallRejected;
   void Function(String fromUserId, String content, String timestamp)? onMessage;
+  void Function(String userId, bool isOnline)? onOnlineStatusChanged;
+  void Function(List<String> onlineUserIds)? onInitialOnlineUsers;
 
   late WebSocketChannel _channel;
 
@@ -22,7 +24,9 @@ class UserSocketService {
     required this.onIncomingCall,
     required this.onCallAccepted,
     required this.onCallRejected,
-    this.onMessage, // ✅ add this
+    this.onMessage,
+    this.onOnlineStatusChanged,
+    this.onInitialOnlineUsers,
   });
 
   void connect() {
@@ -33,7 +37,15 @@ class UserSocketService {
       final data = jsonDecode(event);
       final type = data['type'];
       log(data.toString());
-      if (type == 'incoming_call') {
+
+      if (type == 'online_status') {
+        final userId = data['userId'];
+        final isOnline = data['status'] == 'online';
+        onOnlineStatusChanged?.call(userId, isOnline);
+      } else if (type == 'online_users') {
+        final List<dynamic> ids = data['onlineUsers'] ?? [];
+        onInitialOnlineUsers?.call(ids.cast<String>());
+      } else if (type == 'incoming_call') {
         final from = data['from'];
         final room = data['room'];
         final username = data['username'];

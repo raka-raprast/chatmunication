@@ -9,6 +9,7 @@ import 'package:chatmunication/features/users/user_service.dart';
 import 'package:chatmunication/signaling/user_socket.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UserListScreen extends StatefulWidget {
   final String token;
@@ -26,6 +27,8 @@ class _UserListScreenState extends State<UserListScreen> {
   late Future<User> _profileFuture;
   bool isVideoCall = true;
   bool _isInCallScreen = false;
+  final Map<String, bool> onlineUsers = {};
+  final Map<String, bool> _onlineStatus = {};
 
   int _selectedIndex = 0;
 
@@ -42,6 +45,23 @@ class _UserListScreenState extends State<UserListScreen> {
       onIncomingCall: _onIncomingCall,
       onCallAccepted: _onCallAccepted,
       onCallRejected: _onCallRejected,
+      onMessage: (from, content, timestamp) {
+        setState(() {
+          _future = UserService(token: widget.token).getUsersWithLastMessage();
+        });
+      },
+      onOnlineStatusChanged: (userId, isOnline) {
+        setState(() {
+          _onlineStatus[userId] = isOnline;
+        });
+      },
+      onInitialOnlineUsers: (onlineUserIds) {
+        setState(() {
+          for (var id in onlineUserIds) {
+            _onlineStatus[id] = true;
+          }
+        });
+      },
     )..connect();
 
     userSocket.onMessage = (from, content, timestamp) {
@@ -81,6 +101,7 @@ class _UserListScreenState extends State<UserListScreen> {
           roomId: roomId,
           userSocket: userSocket,
           callType: isVideoCall ? 'video' : 'audio',
+          isCaller: false,
         ),
       ),
     ).then((_) => _isInCallScreen = false);
@@ -129,6 +150,8 @@ class _UserListScreenState extends State<UserListScreen> {
           roomId: roomId,
           userSocket: userSocket,
           callType: callType,
+          otherUser: user,
+          isCaller: true,
         ),
       ),
     );
@@ -152,11 +175,14 @@ class _UserListScreenState extends State<UserListScreen> {
     });
   }
 
-  void _logout() {
-    userSocket.dispose();
-    Navigator.pushReplacement(
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user');
+
+    Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const AuthScreen()),
+      (route) => false,
     );
   }
 
@@ -172,11 +198,12 @@ class _UserListScreenState extends State<UserListScreen> {
       appBar: AppBar(
         title: Text(_selectedIndex == 0 ? "Chats" : "Profile"),
         actions: [
-          IconButton(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
-          ),
+          if (_selectedIndex == 1)
+            IconButton(
+              onPressed: _logout,
+              icon: const Icon(Icons.logout),
+              tooltip: 'Logout',
+            ),
         ],
       ),
       body: _selectedIndex == 0 ? _buildChatList() : _buildProfileTab(),
@@ -224,13 +251,33 @@ class _UserListScreenState extends State<UserListScreen> {
                 profilePicture: user.profilePicture,
               )),
               onLongPress: () => _showCallDialog(user),
-              leading: CircleAvatar(
-                backgroundImage: user.profilePicture.isNotEmpty
-                    ? NetworkImage(user.profilePicture)
-                    : null,
-                child: user.profilePicture.isEmpty
-                    ? Text(user.username[0].toUpperCase())
-                    : null,
+              leading: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundImage: user.profilePicture.isNotEmpty
+                        ? NetworkImage(user.profilePicture)
+                        : null,
+                    child: user.profilePicture.isEmpty
+                        ? Text(user.username[0].toUpperCase())
+                        : null,
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: _onlineStatus[user.id] == true
+                            ? Colors.green
+                            : Colors.grey,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               title: Text(user.username),
               subtitle: Text(

@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'dart:io';
+import 'package:chatmunication/features/users/user.dart';
 import 'package:chatmunication/signaling/signaling.dart';
 import 'package:chatmunication/signaling/user_socket.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -12,12 +13,16 @@ class CallScreen extends StatefulWidget {
   final String roomId;
   final UserSocketService userSocket; // ✅ optional callback
   final String callType;
+  final User? otherUser;
+  final bool isCaller; // Optional, true if this user initiated the call
 
   const CallScreen({
     required this.token,
     required this.roomId,
     required this.userSocket,
     required this.callType, // ✅ add this
+    this.otherUser,
+    this.isCaller = false, // Default to false
   });
 
   @override
@@ -82,10 +87,8 @@ class _CallScreenState extends State<CallScreen> {
     await signaling.initRenderers();
     await signaling.connect();
 
-    final stream = signaling.localRenderer.srcObject;
-    if (stream != null) {
-      _audioTrack = stream.getAudioTracks().firstOrNull;
-    }
+    final stream = signaling.localStream;
+    _audioTrack = stream.getAudioTracks().firstOrNull;
   }
 
   void _toggleMute() {
@@ -150,7 +153,7 @@ class _CallScreenState extends State<CallScreen> {
                       // ✅ Overlay with calling text
                       Container(
                         color: Colors.black.withOpacity(0.5),
-                        child: const Center(
+                        child: Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -158,7 +161,9 @@ class _CallScreenState extends State<CallScreen> {
                                   size: 64, color: Colors.green),
                               SizedBox(height: 20),
                               Text(
-                                'Calling...',
+                                widget.isCaller
+                                    ? '${widget.callType == 'video' ? 'Video Calling' : 'Audio Calling'} ${widget.otherUser?.username ?? ''}...'
+                                    : 'Connecting...',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 22,
