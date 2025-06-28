@@ -141,11 +141,9 @@ class _MessageScreenState extends State<MessageScreen> {
       roomId,
       callType: callType,
     );
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CallScreen(
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => CallScreen(
           token: widget.userSocket.token,
           roomId: roomId,
           userSocket: widget.userSocket,
@@ -153,6 +151,8 @@ class _MessageScreenState extends State<MessageScreen> {
           otherUser: widget.otherUser,
           isCaller: true,
         ),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
       ),
     );
   }

@@ -87,16 +87,17 @@ class IncomingCallScreen extends StatelessWidget {
                       label: 'Accept',
                       color: Colors.green,
                       onTap: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => CallScreen(
+                        Navigator.of(context).pushReplacement(
+                          PageRouteBuilder(
+                            pageBuilder: (_, __, ___) => CallScreen(
                               token: token,
                               roomId: roomId,
                               userSocket: userSocket,
                               callType: callType,
                               isCaller: false,
                             ),
+                            transitionDuration: Duration.zero,
+                            reverseTransitionDuration: Duration.zero,
                           ),
                         );
                       },

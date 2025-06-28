@@ -16,7 +16,9 @@ class Signaling {
   final remoteStreamReady = ValueNotifier<bool>(false);
   final VoidCallback? onPeerDisconnected;
   late MediaStream _localStream;
+  late MediaStream _remoteStream;
   MediaStream get localStream => _localStream;
+  MediaStream get remoteStream => _remoteStream;
 
   bool _isReady = false;
   bool _otherReady = false;

@@ -35,8 +35,12 @@ class UserService {
     );
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((e) => UserWithLastMessage.fromJson(e)).toList();
+      final body = jsonDecode(response.body);
+      if (body is List) {
+        return body.map((e) => UserWithLastMessage.fromJson(e)).toList();
+      } else {
+        return []; // Return empty list if body is not a List
+      }
     } else {
       throw Exception('Failed to load users with messages');
     }

@@ -93,18 +93,21 @@ class _UserListScreenState extends State<UserListScreen> {
 
   void _onCallAccepted(String roomId) {
     _isInCallScreen = true;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CallScreen(
-          token: widget.token,
-          roomId: roomId,
-          userSocket: userSocket,
-          callType: isVideoCall ? 'video' : 'audio',
-          isCaller: false,
-        ),
-      ),
-    ).then((_) => _isInCallScreen = false);
+    Navigator.of(context)
+        .push(
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => CallScreen(
+              token: widget.token,
+              roomId: roomId,
+              userSocket: userSocket,
+              callType: isVideoCall ? 'video' : 'audio',
+              isCaller: false,
+            ),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+          ),
+        )
+        .then((_) => _isInCallScreen = false);
   }
 
   Future<User> _fetchProfile() async {
@@ -142,10 +145,9 @@ class _UserListScreenState extends State<UserListScreen> {
 
     userSocket.sendCallInvite(user.id, roomId, callType: callType);
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CallScreen(
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => CallScreen(
           token: widget.token,
           roomId: roomId,
           userSocket: userSocket,
@@ -153,6 +155,8 @@ class _UserListScreenState extends State<UserListScreen> {
           otherUser: user,
           isCaller: true,
         ),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
       ),
     );
   }
@@ -196,6 +200,7 @@ class _UserListScreenState extends State<UserListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(_selectedIndex == 0 ? "Chats" : "Profile"),
         actions: [
           if (_selectedIndex == 1)
@@ -325,7 +330,15 @@ class _UserListScreenState extends State<UserListScreen> {
             children: [
               CircleAvatar(
                 radius: 50,
-                backgroundImage: NetworkImage(profile.profilePicture),
+                backgroundImage: profile.profilePicture.isNotEmpty
+                    ? NetworkImage(profile.profilePicture)
+                    : null,
+                child: profile.profilePicture.isEmpty
+                    ? Text(
+                        profile.username[0].toUpperCase(),
+                        style: TextStyle(fontSize: 36),
+                      )
+                    : null,
               ),
               const SizedBox(height: 16),
               Text(
@@ -336,6 +349,11 @@ class _UserListScreenState extends State<UserListScreen> {
               const SizedBox(height: 8),
               Text(
                 'ID: ${profile.id}',
+                style: const TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Email: ${profile.email}',
                 style: const TextStyle(color: Colors.grey),
               ),
             ],
