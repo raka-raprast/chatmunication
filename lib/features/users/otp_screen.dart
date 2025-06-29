@@ -1,5 +1,6 @@
 import 'package:chatmunication/shared/theme/colors.dart';
 import 'package:chatmunication/shared/theme/textstyle.dart';
+import 'package:chatmunication/shared/ui/components/back_button.dart';
 import 'package:chatmunication/shared/ui/components/scaffold.dart';
 import 'package:chatmunication/shared/ui/components/textfield.dart';
 import 'package:flutter/material.dart';
@@ -94,21 +95,8 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   Widget build(BuildContext context) {
     return CMScaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: CMColors.primaryVariant,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new,
-                size: 18,
-                color: CMColors.surface,
-              )),
-          onPressed: () => Navigator.pop(context),
-        ),
+      floatingAppBar: AppBar(
+        leading: CMBackButton(),
         backgroundColor: Colors.transparent,
       ),
       body: Padding(

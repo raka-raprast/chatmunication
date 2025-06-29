@@ -24,4 +24,10 @@ class CMTextStyle {
     fontWeight: FontWeight.normal,
     color: Colors.black87,
   );
+
+  static TextStyle small = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.normal,
+    color: Colors.black87,
+  );
 }

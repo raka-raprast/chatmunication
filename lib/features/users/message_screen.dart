@@ -1,4 +1,12 @@
 import 'dart:convert';
+import 'package:chatmunication/shared/theme/colors.dart';
+import 'package:chatmunication/shared/theme/textstyle.dart';
+import 'package:chatmunication/shared/ui/components/appbar.dart';
+import 'package:chatmunication/shared/ui/components/avatar.dart';
+import 'package:chatmunication/shared/ui/components/back_button.dart';
+import 'package:chatmunication/shared/ui/components/scaffold.dart';
+import 'package:chatmunication/shared/ui/components/textfield.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:chatmunication/features/call/call_screen.dart';
 import 'package:chatmunication/features/users/user.dart';
@@ -163,12 +171,12 @@ class _MessageScreenState extends State<MessageScreen> {
         margin: const EdgeInsets.symmetric(vertical: 10),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.grey.shade300,
+          color: CMColors.primary.withValues(alpha: .1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
           label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          style: CMTextStyle.text,
         ),
       ),
     );
@@ -191,8 +199,8 @@ class _MessageScreenState extends State<MessageScreen> {
   Widget _buildMessageBubble(Map<String, String> msg) {
     final isMe = msg['from'] == widget.currentUserId;
     final alignment = isMe ? Alignment.centerRight : Alignment.centerLeft;
-    final bgColor = isMe ? Colors.blue : Colors.grey.shade300;
-    final textColor = isMe ? Colors.white : Colors.black87;
+    final bgColor = isMe ? CMColors.primaryVariant : Colors.white;
+    final textColor = isMe ? Colors.white : CMColors.text;
 
     final time = DateFormat.Hm()
         .format(DateTime.parse(msg['timestamp']!)); // e.g., 13:05
@@ -201,27 +209,64 @@ class _MessageScreenState extends State<MessageScreen> {
       alignment: alignment,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
         constraints: const BoxConstraints(maxWidth: 280),
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.only(
+            topRight: Radius.circular(999),
+            bottomRight: Radius.circular(isMe ? 0 : 999),
+            bottomLeft: Radius.circular(isMe ? 999 : 0),
+            topLeft: Radius.circular(999),
+          ),
+          border: isMe
+              ? null
+              : Border.all(
+                  width: .5,
+                  color: CMColors.primaryVariant,
+                ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          // crossAxisAlignment: CrossAxisAlignment.end,
           children: [
+            if (!isMe) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 18),
+                child: Text(
+                  time,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: textColor.withValues(alpha: .7),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 6,
+              )
+            ],
             Text(
               msg['content'] ?? '',
-              style: TextStyle(color: textColor, fontSize: 15),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              time,
               style: TextStyle(
-                fontSize: 11,
-                color: textColor.withOpacity(0.7),
+                color: textColor,
+                fontSize: 15,
               ),
             ),
+            if (isMe) ...[
+              SizedBox(
+                width: 6,
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 18),
+                child: Text(
+                  time,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: textColor.withValues(alpha: .7),
+                  ),
+                ),
+              )
+            ],
           ],
         ),
       ),
@@ -237,124 +282,183 @@ class _MessageScreenState extends State<MessageScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
+    return CMScaffold(
+      useGradientBackground: false,
+      floatingAppBar: CMFloatingAppBar(
+        leading: Row(
           children: [
-            CircleAvatar(
-              backgroundImage: widget.otherUser.profilePicture.isNotEmpty
-                  ? NetworkImage(widget.otherUser.profilePicture)
-                  : null,
-              child: widget.otherUser.profilePicture.isEmpty
-                  ? Text(widget.otherUser.username[0].toUpperCase())
-                  : null,
+            CMBackButton(),
+            CMAvatar(
+              size: 45,
+              profilePicture: widget.otherUser.profilePicture,
+              email: widget.otherUser.email ?? '',
+              username: widget.otherUser.username,
             ),
-            SizedBox(width: 10),
-            Text(widget.otherUser.username),
+            SizedBox(
+              width: 6,
+            ),
+            Text(
+              widget.otherUser.username,
+              style: CMTextStyle.subtitle.copyWith(color: CMColors.text),
+            )
           ],
         ),
         actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'voice') {
-                _startCall('audio');
-              } else if (value == 'video') {
-                _startCall('video');
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'voice',
-                child: ListTile(
-                  leading: Icon(Icons.call),
-                  title: Text('Voice Call'),
-                ),
-              ),
-              PopupMenuItem(
-                value: 'video',
-                child: ListTile(
-                  leading: Icon(Icons.videocam),
-                  title: Text('Video Call'),
-                ),
-              ),
-            ],
+          GestureDetector(
+            onTap: () => _startCall('video'),
+            child: Icon(
+              CupertinoIcons.video_camera_solid,
+              color: CMColors.primaryVariant,
+            ),
           ),
+          SizedBox(
+            width: 12,
+          ),
+          GestureDetector(
+            onTap: () => _startCall('audio'),
+            child: Icon(
+              Icons.call,
+              color: CMColors.primaryVariant,
+            ),
+          )
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : Scrollbar(
-                    child: _messages.isEmpty
-                        ? Center(
-                            child: Text(
-                                "Say something to ${widget.otherUser.username}"),
-                          )
-                        : ListView.builder(
-                            controller: _scrollController,
-                            itemCount: _messages.length,
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            itemBuilder: (context, index) {
-                              final msg = _messages[index];
-                              if (_messages[index] is Map<String, String> &&
-                                  _messages[index]['type'] == 'timestamp') {
-                                return _buildDateSeparator(
-                                    _messages[index]['label']!);
-                              } else {
-                                return _buildMessageBubble(
-                                    _messages[index] as Map<String, String>);
-                              }
-                            },
+      // appBar: AppBar(
+      //   title: Row(
+      //     children: [
+      //       CMAvatar(
+      //         profilePicture: widget.otherUser.profilePicture,
+      //         email: widget.otherUser.email ?? '',
+      //         username: widget.otherUser.username,
+      //       ),
+      //       SizedBox(width: 10),
+      //       Text(widget.otherUser.username),
+      //     ],
+      //   ),
+      //   actions: [
+      //     PopupMenuButton<String>(
+      //       onSelected: (value) {
+      //         if (value == 'voice') {
+      //           _startCall('audio');
+      //         } else if (value == 'video') {
+      //           _startCall('video');
+      //         }
+      //       },
+      //       itemBuilder: (context) => [
+      //         const PopupMenuItem(
+      //           value: 'voice',
+      //           child: ListTile(
+      //             leading: Icon(Icons.call),
+      //             title: Text('Voice Call'),
+      //           ),
+      //         ),
+      //         PopupMenuItem(
+      //           value: 'video',
+      //           child: ListTile(
+      //             leading: Icon(Icons.videocam),
+      //             title: Text('Video Call'),
+      //           ),
+      //         ),
+      //       ],
+      //     ),
+      //   ],
+      // ),
+      body: CustomScrollView(
+        slivers: [
+          SliverFillRemaining(
+            hasScrollBody: true,
+            child: Stack(
+              children: [
+                _loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : Scrollbar(
+                        child: _messages.isEmpty
+                            ? Center(
+                                child: Text(
+                                    "Say something to ${widget.otherUser.username}"),
+                              )
+                            : ListView.builder(
+                                controller: _scrollController,
+                                itemCount: _messages.length,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
+                                itemBuilder: (context, index) {
+                                  final msg = _messages[index];
+                                  if (_messages[index] is Map<String, String> &&
+                                      _messages[index]['type'] == 'timestamp') {
+                                    return _buildDateSeparator(
+                                        _messages[index]['label']!);
+                                  } else {
+                                    return _buildMessageBubble(_messages[index]
+                                        as Map<String, String>);
+                                  }
+                                },
+                              ),
+                      ),
+                Positioned(
+                  bottom: 20,
+                  left: 0,
+                  right: 0,
+                  child: SafeArea(
+                    top: false,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(999),
+                        color: Colors.white,
+                        gradient: LinearGradient(colors: [
+                          CMColors.primary.withValues(alpha: .1),
+                          CMColors.primaryVariant.withValues(alpha: .15),
+                        ]),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: CMTextField(
+                              controller: _controller,
+                              minLines: 1,
+                              maxLines: 7,
+                              keyboardType: TextInputType.multiline,
+                              textInputAction: TextInputAction.newline,
+                              label: 'Type a message...',
+                              decoration: InputDecoration(
+                                hintText: 'Type a message...',
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 12),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                  borderSide:
+                                      BorderSide(color: Colors.grey.shade400),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                  borderSide:
+                                      BorderSide(color: Colors.grey.shade300),
+                                ),
+                              ),
+                            ),
                           ),
-                  ),
-          ),
-          const Divider(height: 1),
-          SafeArea(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              color: Colors.white,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      minLines: 1,
-                      maxLines: 7,
-                      keyboardType: TextInputType.multiline,
-                      textInputAction: TextInputAction.newline,
-                      decoration: InputDecoration(
-                        hintText: 'Type a message...',
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide(color: Colors.grey.shade400),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
+                          const SizedBox(width: 8),
+                          CircleAvatar(
+                            backgroundColor: _canSend
+                                ? Theme.of(context).primaryColor
+                                : Colors.grey.shade300,
+                            child: IconButton(
+                              icon: const Icon(Icons.send),
+                              color: _canSend ? Colors.white : Colors.black45,
+                              onPressed: _canSend ? _sendMessage : null,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  CircleAvatar(
-                    backgroundColor: _canSend
-                        ? Theme.of(context).primaryColor
-                        : Colors.grey.shade300,
-                    child: IconButton(
-                      icon: const Icon(Icons.send),
-                      color: _canSend ? Colors.white : Colors.black45,
-                      onPressed: _canSend ? _sendMessage : null,
-                    ),
-                  ),
-                ],
-              ),
+                )
+              ],
             ),
-          ),
+          )
         ],
       ),
     );

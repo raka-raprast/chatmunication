@@ -16,6 +16,10 @@ class CMTextField extends StatelessWidget {
     this.maxLines,
     this.maxLength,
     this.onChanged,
+    this.radius,
+    this.isSmall = false,
+    this.minLines,
+    this.textInputAction,
   });
 
   final TextEditingController? controller;
@@ -28,8 +32,12 @@ class CMTextField extends StatelessWidget {
   final TextAlign textAlign;
   final TextInputType keyboardType;
   final int? maxLines;
+  final int? minLines;
   final int? maxLength;
   final Function(String)? onChanged;
+  final double? radius;
+  final bool isSmall;
+  final TextInputAction? textInputAction;
 
   @override
   Widget build(BuildContext context) {
@@ -38,9 +46,11 @@ class CMTextField extends StatelessWidget {
       focusNode: focusNode,
       textAlign: textAlign,
       maxLines: obscureText ? 1 : maxLines,
+      minLines: obscureText ? 1 : minLines,
       maxLength: maxLength,
       keyboardType: keyboardType,
       onChanged: onChanged,
+      textInputAction: textInputAction,
       style: TextStyle(
         color: CMColors.text,
         fontSize: 16,
@@ -48,21 +58,21 @@ class CMTextField extends StatelessWidget {
       decoration: decoration ??
           InputDecoration(
             isDense: true,
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            contentPadding: EdgeInsets.symmetric(
+                vertical: isSmall ? 2 : 12, horizontal: 16),
             hintText: label,
             filled: true,
             fillColor: CMColors.surface,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(9),
+              borderRadius: BorderRadius.circular(radius ?? 9),
               borderSide: BorderSide(color: CMColors.surface),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(9),
+              borderRadius: BorderRadius.circular(radius ?? 9),
               borderSide: BorderSide(color: CMColors.surface),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(9),
+              borderRadius: BorderRadius.circular(radius ?? 9),
               borderSide: BorderSide(color: CMColors.primary, width: 2),
             ),
             hintStyle: TextStyle(color: CMColors.hint),

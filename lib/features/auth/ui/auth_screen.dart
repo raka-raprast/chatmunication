@@ -99,7 +99,6 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return CMScaffold(
-      appBar: AppBar(backgroundColor: Colors.transparent),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -157,7 +156,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             });
                           },
                           side: BorderSide(
-                            color: CMColors.primaryVariant,
+                            color: CMColors.text,
                             width: 2,
                           ),
                           activeColor: CMColors.primaryVariant,
@@ -167,7 +166,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         Text(
                           'Remember me',
                           style: CMTextStyle.text.copyWith(
-                            color: CMColors.primaryVariant,
+                            color: CMColors.text,
                           ),
                         ),
                       ],
@@ -175,7 +174,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     Text(
                       'Forgot password',
                       style: CMTextStyle.text.copyWith(
-                        color: CMColors.primaryVariant,
+                        color: CMColors.text,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -238,11 +237,14 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
               ),
               SignInButton(
-                Buttons.facebookNew,
+                Buttons.facebook,
                 onPressed: () {},
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(9),
                 ),
+              ),
+              SizedBox(
+                height: 12,
               ),
               RichText(
                   textAlign: TextAlign.center,

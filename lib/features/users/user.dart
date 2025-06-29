@@ -31,15 +31,16 @@ class UserWithLastMessage {
   final String? lastMessageContent;
   final String? email;
   final DateTime? lastMessageTimestamp;
+  final bool? isSender;
 
-  UserWithLastMessage({
-    required this.id,
-    required this.username,
-    required this.profilePicture,
-    this.email,
-    this.lastMessageContent,
-    this.lastMessageTimestamp,
-  });
+  UserWithLastMessage(
+      {required this.id,
+      required this.username,
+      required this.profilePicture,
+      this.email,
+      this.lastMessageContent,
+      this.lastMessageTimestamp,
+      this.isSender});
 
   factory UserWithLastMessage.fromJson(Map<String, dynamic> json) {
     final lastMessage = json['lastMessage'];
@@ -52,6 +53,7 @@ class UserWithLastMessage {
       lastMessageTimestamp: lastMessage?['timestamp'] != null
           ? DateTime.parse(lastMessage['timestamp'])
           : null,
+      isSender: lastMessage?['isSender'],
     );
   }
 }

@@ -56,18 +56,27 @@ class _StartupScreenState extends State<StartupScreen> {
   @override
   Widget build(BuildContext context) {
     return CMScaffold(
-      body: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Image.asset(
-            'lib/assets/images/logo.png',
-            height: 370,
-            width: 370,
-          ),
-          SpinKitFoldingCube(
-            color: CMColors.primaryVariant,
-          ),
-        ],
+      body: SizedBox(
+        height: MediaQuery.of(context).size.height,
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Image.asset(
+                  'lib/assets/images/logo.png',
+                  height: 205,
+                  width: 205,
+                ),
+              ],
+            ),
+            Center(
+              child: SpinKitFoldingCube(
+                color: CMColors.primaryVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
