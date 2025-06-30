@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:chatmunication/features/users/otp_screen.dart';
 import 'package:chatmunication/features/users/user.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,7 +38,6 @@ class AuthService {
     return null;
   }
 
-  /// Step 1: Send login request and receive OTP (no JWT returned yet)
   Future<bool> sendOtp(String identifier, String password) async {
     final res = await http.post(
       Uri.parse('$baseUrl/login'),
@@ -51,7 +51,6 @@ class AuthService {
     return res.statusCode == 200;
   }
 
-  /// Step 2: Verify OTP to complete login and receive JWT + user info
   Future<User?> verifyOtp(String identifier, String otp) async {
     final res = await http.post(
       Uri.parse('$baseUrl/verify-otp'),
@@ -74,6 +73,19 @@ class AuthService {
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user', jsonEncode(userData));
+
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken != null) {
+        await http.put(
+          Uri.parse(
+              'http://192.168.100.113:2340/api/users/${userData['id']}/fcm-token'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ${userData['token']}',
+          },
+          body: jsonEncode({'token': fcmToken}),
+        );
+      }
 
       return User.fromJson(userData);
     }

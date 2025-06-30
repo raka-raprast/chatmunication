@@ -5,6 +5,7 @@ class User {
   final String? token;
   final String? email;
   final bool? isAdded;
+  final String? fcmToken;
 
   User({
     required this.id,
@@ -13,6 +14,7 @@ class User {
     this.token,
     this.email,
     this.isAdded,
+    this.fcmToken,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class User {
       token: json['token'],
       email: json['email'],
       isAdded: json['isAdded'] ?? json['addedYou'],
+      fcmToken: json['fcm_token'],
     );
   }
 
@@ -33,6 +36,7 @@ class User {
     String? token,
     String? email,
     bool? isAdded,
+    String? fcmToken,
   }) {
     return User(
       id: id ?? this.id,
@@ -41,6 +45,7 @@ class User {
       token: token ?? this.token,
       email: email ?? this.email,
       isAdded: isAdded ?? this.isAdded,
+      fcmToken: fcmToken ?? this.fcmToken,
     );
   }
 }

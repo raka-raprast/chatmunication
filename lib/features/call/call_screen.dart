@@ -1,9 +1,13 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:chatmunication/features/users/user.dart';
+import 'package:chatmunication/shared/theme/colors.dart';
+import 'package:chatmunication/shared/theme/textstyle.dart';
+import 'package:chatmunication/shared/ui/components/avatar.dart';
 import 'package:chatmunication/signaling/signaling.dart';
 import 'package:chatmunication/signaling/user_socket.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -55,9 +59,9 @@ class _CallScreenState extends State<CallScreen> {
       log("Call was rejected");
       if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Call was rejected")),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(content: Text("Call was rejected")),
+      // );
     };
 
     _start();
@@ -110,13 +114,25 @@ class _CallScreenState extends State<CallScreen> {
   @override
   Widget build(BuildContext context) {
     final local = widget.callType == 'video'
-        ? RTCVideoView(signaling.localRenderer, mirror: false)
+        ? RTCVideoView(
+            signaling.localRenderer,
+            mirror: true,
+            objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+          )
         : const Center(child: Icon(Icons.mic, size: 64, color: Colors.white));
 
     final remote = widget.callType == 'video'
-        ? RTCVideoView(signaling.remoteRenderer)
-        : const Center(
-            child: Icon(Icons.person, size: 120, color: Colors.grey));
+        ? RTCVideoView(
+            signaling.remoteRenderer,
+            objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+          )
+        : Center(
+            child: CMAvatar(
+            username: widget.otherUser?.username ?? '',
+            profilePicture: widget.otherUser?.profilePicture ?? '',
+            email: widget.otherUser?.email ?? '',
+            size: MediaQuery.of(context).size.width * .5,
+          ));
 
     final bigView = _isLocalSmall ? remote : local;
     final pipView = _isLocalSmall ? local : remote;
@@ -124,6 +140,27 @@ class _CallScreenState extends State<CallScreen> {
     return Scaffold(
       body: Stack(
         children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  CMColors.primary.withValues(alpha: .2),
+                  CMColors.primaryVariant.withValues(alpha: .25),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 20,
+            child: SafeArea(
+                child: Text(
+              widget.otherUser?.username ?? '',
+              textAlign: TextAlign.center,
+              style: CMTextStyle.title.copyWith(fontWeight: FontWeight.w400),
+            )),
+          ),
           // Fullscreen area
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 500),
@@ -152,7 +189,7 @@ class _CallScreenState extends State<CallScreen> {
 
                       // ✅ Overlay with calling text
                       Container(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: .5),
                         child: Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
@@ -193,82 +230,150 @@ class _CallScreenState extends State<CallScreen> {
               builder: (context, remoteReady, _) {
                 if (!remoteReady) return const SizedBox.shrink();
 
-                return AnimatedPositioned(
-                  duration: const Duration(milliseconds: 500),
-                  left: _pipOffset.dx,
-                  top: _pipOffset.dy,
-                  child: GestureDetector(
-                    onTap: _switchViews,
-                    onPanUpdate: (details) {
-                      setState(() {
-                        _pipOffset += details.delta;
-                      });
-                    },
-                    onPanEnd: (details) {
-                      final screenSize = MediaQuery.of(context).size;
-                      const pipWidth = 120.0;
-                      const pipHeight = 160.0;
+                return Stack(
+                  children: [
+                    Positioned(
+                      left: _pipOffset.dx,
+                      top: _pipOffset.dy,
+                      child: GestureDetector(
+                        onTap: _switchViews,
+                        onPanUpdate: (details) {
+                          setState(() {
+                            _pipOffset += details.delta;
+                          });
+                        },
+                        onPanEnd: (_) {
+                          final screenSize = MediaQuery.of(context).size;
+                          const pipWidth = 120.0;
+                          const pipHeight = 160.0;
+                          const bottomPadding = 120;
+                          const topPadding = 60.0;
 
-                      final x = _pipOffset.dx;
-                      final y = _pipOffset.dy;
+                          final x = _pipOffset.dx;
+                          final y = _pipOffset.dy;
 
-                      final midX = screenSize.width / 2;
-                      final midY = screenSize.height / 2;
+                          final midX = screenSize.width / 2;
+                          final midY = screenSize.height / 2;
 
-                      final snappedX =
-                          x < midX ? 20 : screenSize.width - pipWidth - 20;
-                      final snappedY =
-                          y < midY ? 60 : screenSize.height - pipHeight - 60;
+                          final snappedX =
+                              x < midX ? 20 : screenSize.width - pipWidth - 20;
 
-                      setState(() {
-                        _pipOffset =
-                            Offset(snappedX.toDouble(), snappedY.toDouble());
-                      });
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 500),
-                      curve: Curves.easeOut,
-                      width: 120,
-                      height: 160,
-                      decoration: BoxDecoration(
-                        color: Colors.black87,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: AspectRatio(
-                          aspectRatio: 3 / 4,
-                          child: pipView,
+                          final snappedY = y < midY
+                              ? topPadding
+                              : screenSize.height - pipHeight - bottomPadding;
+
+                          setState(() {
+                            _pipOffset = Offset(snappedX.toDouble(), snappedY);
+                          });
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOut,
+                          width: 120,
+                          height: 160,
+                          decoration: BoxDecoration(
+                            color: Colors.black87,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: AspectRatio(
+                              aspectRatio: 3 / 4,
+                              child: pipView,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 );
               },
             ),
 
-          // Mute button
           Positioned(
             bottom: 32,
-            left: 24,
-            child: FloatingActionButton(
-              onPressed: _toggleMute,
-              backgroundColor: _isMuted ? Colors.red : Colors.green,
-              child: Icon(_isMuted ? Icons.mic_off : Icons.mic),
+            left: MediaQuery.of(context).size.width / 2 - 150,
+            child: Container(
+              height: 68,
+              decoration: BoxDecoration(color: CMColors.background),
             ),
           ),
           Positioned(
             bottom: 32,
-            right: 24,
-            child: FloatingActionButton(
-              onPressed: () {
-                signaling.dispose();
-                Navigator.pop(context);
-              },
-              backgroundColor: Colors.red,
-              child: const Icon(Icons.call_end),
+            left: 0,
+            right: 0,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                    decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: [
+                          CMColors.primary.withValues(alpha: .2),
+                          CMColors.primaryVariant.withValues(alpha: .25),
+                        ]),
+                        borderRadius: BorderRadius.circular(999)),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      spacing: 8,
+                      children: [
+                        FloatingActionButton(
+                          shape: CircleBorder(),
+                          onPressed: () {},
+                          backgroundColor: CMColors.primaryVariant,
+                          child: Icon(
+                            Icons.volume_up,
+                            size: 28,
+                            color: Colors.white,
+                          ),
+                        ),
+                        FloatingActionButton(
+                          shape: CircleBorder(),
+                          onPressed: _toggleMute,
+                          backgroundColor: CMColors.primaryVariant,
+                          child: Icon(
+                            _isMuted ? Icons.mic_off : Icons.mic,
+                            size: 28,
+                            color: Colors.white,
+                          ),
+                        ),
+                        FloatingActionButton(
+                          shape: CircleBorder(),
+                          onPressed: () {},
+                          backgroundColor: CMColors.primaryVariant,
+                          child: Icon(
+                            CupertinoIcons.video_camera_solid,
+                            size: 28,
+                            color: Colors.white,
+                          ),
+                        ),
+                        FloatingActionButton(
+                          shape: CircleBorder(),
+                          onPressed: () {
+                            if (!signaling.remoteStreamReady.value &&
+                                widget.isCaller) {
+                              widget.userSocket.cancelCall(
+                                  widget.otherUser?.id ?? '', widget.roomId);
+                            }
+                            signaling.dispose();
+                            Navigator.pop(context);
+                          },
+                          backgroundColor: Colors.red,
+                          child: Icon(
+                            Icons.call,
+                            size: 28,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+          )
         ],
       ),
     );

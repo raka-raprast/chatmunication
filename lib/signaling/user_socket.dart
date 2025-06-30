@@ -1,33 +1,65 @@
 import 'dart:convert';
-import 'dart:developer';
+
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class UserSocketService {
-  final String token;
-  final String userId;
-  final String serverUrl;
+  static final UserSocketService instance = UserSocketService._internal();
 
-  void Function(String fromUserId, String roomId, String fromName,
-      String profilePicture, String callType) onIncomingCall;
-  void Function(String roomId) onCallAccepted;
-  void Function() onCallRejected;
+  // Private constructor
+  UserSocketService._internal();
+
+  // Call `init(...)` once before using
+  late String token;
+  late String userId;
+  late String serverUrl;
+
+  late void Function(
+    String fromUserId,
+    String roomId,
+    String fromName,
+    String profilePicture,
+    String callType,
+  ) onIncomingCall;
+
+  late void Function(String roomId) onCallAccepted;
+  late void Function() onCallRejected;
+  void Function()? onCallCancelled;
   void Function(String fromUserId, String content, String timestamp)? onMessage;
   void Function(String userId, bool isOnline)? onOnlineStatusChanged;
   void Function(List<String> onlineUserIds)? onInitialOnlineUsers;
 
   late WebSocketChannel _channel;
 
-  UserSocketService({
-    required this.serverUrl,
-    required this.token,
-    required this.userId,
-    required this.onIncomingCall,
-    required this.onCallAccepted,
-    required this.onCallRejected,
-    this.onMessage,
-    this.onOnlineStatusChanged,
-    this.onInitialOnlineUsers,
-  });
+  void init({
+    required String token,
+    required String userId,
+    required String serverUrl,
+    required void Function(
+      String fromUserId,
+      String roomId,
+      String fromName,
+      String profilePicture,
+      String callType,
+    ) onIncomingCall,
+    required void Function(String roomId) onCallAccepted,
+    required void Function() onCallRejected,
+    void Function()? onCallCancelled,
+    void Function(String fromUserId, String content, String timestamp)?
+        onMessage,
+    void Function(String userId, bool isOnline)? onOnlineStatusChanged,
+    void Function(List<String> onlineUserIds)? onInitialOnlineUsers,
+  }) {
+    this.token = token;
+    this.userId = userId;
+    this.serverUrl = serverUrl;
+    this.onIncomingCall = onIncomingCall;
+    this.onCallAccepted = onCallAccepted;
+    this.onCallRejected = onCallRejected;
+    this.onCallCancelled = onCallCancelled;
+    this.onMessage = onMessage;
+    this.onOnlineStatusChanged = onOnlineStatusChanged;
+    this.onInitialOnlineUsers = onInitialOnlineUsers;
+  }
 
   void connect() {
     final uri = Uri.parse('ws://$serverUrl/user-socket?userId=$userId');
@@ -36,32 +68,44 @@ class UserSocketService {
     _channel.stream.listen((event) {
       final data = jsonDecode(event);
       final type = data['type'];
-      log(data.toString());
 
-      if (type == 'online_status') {
-        final userId = data['userId'];
-        final isOnline = data['status'] == 'online';
-        onOnlineStatusChanged?.call(userId, isOnline);
-      } else if (type == 'online_users') {
-        final List<dynamic> ids = data['onlineUsers'] ?? [];
-        onInitialOnlineUsers?.call(ids.cast<String>());
-      } else if (type == 'incoming_call') {
-        final from = data['from'];
-        final room = data['room'];
-        final username = data['username'];
-        final profilePicture = data['profile_picture'];
-        final callType = data['call_type'];
-        onIncomingCall(from, room, username, profilePicture, callType);
-      } else if (type == 'call_accepted') {
-        final room = data['room'];
-        onCallAccepted(room);
-      } else if (type == 'call_rejected') {
-        onCallRejected();
-      } else if (type == 'chat_message') {
-        final from = data['from'];
-        final content = data['content'];
-        final timestamp = data['timestamp'];
-        onMessage?.call(from, content, timestamp);
+      switch (type) {
+        case 'online_status':
+          final userId = data['userId'];
+          final isOnline = data['status'] == 'online';
+          onOnlineStatusChanged?.call(userId, isOnline);
+          break;
+
+        case 'online_users':
+          final ids = List<String>.from(data['onlineUsers'] ?? []);
+          onInitialOnlineUsers?.call(ids);
+          break;
+
+        case 'incoming_call':
+          onIncomingCall(
+            data['from'],
+            data['room'],
+            data['username'],
+            data['profile_picture'],
+            data['call_type'],
+          );
+          break;
+
+        case 'call_accepted':
+          onCallAccepted(data['room']);
+          break;
+
+        case 'call_rejected':
+          onCallRejected();
+          break;
+
+        case 'call_cancelled':
+          onCallCancelled?.call();
+          break;
+
+        case 'chat_message':
+          onMessage?.call(data['from'], data['content'], data['timestamp']);
+          break;
       }
     });
   }
@@ -79,32 +123,38 @@ class UserSocketService {
   }
 
   void acceptCall(String roomId) {
-    final msg = {
+    _channel.sink.add(jsonEncode({
       "type": "call_accepted",
       "from": userId,
       "room": roomId,
-    };
-    _channel.sink.add(jsonEncode(msg));
+    }));
   }
 
   void rejectCall(String callerId) {
-    final msg = {
+    _channel.sink.add(jsonEncode({
       "type": "call_rejected",
-      "from": userId, // this is callee
-      "to": callerId, // ✅ this is caller!
-    };
-    _channel.sink.add(jsonEncode(msg));
+      "from": userId,
+      "to": callerId,
+    }));
+  }
+
+  void cancelCall(String calleeId, String roomId) {
+    _channel.sink.add(jsonEncode({
+      "type": "call_cancelled",
+      "from": userId,
+      "to": calleeId,
+      "room": roomId,
+    }));
   }
 
   void sendMessage(String toUserId, String content, String timestamp) {
-    final msg = {
+    _channel.sink.add(jsonEncode({
       "type": "chat_message",
       "to": toUserId,
       "from": userId,
       "content": content,
       "timestamp": timestamp,
-    };
-    _channel.sink.add(jsonEncode(msg));
+    }));
   }
 
   void dispose() {

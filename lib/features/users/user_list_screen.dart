@@ -34,7 +34,7 @@ class UserListScreen extends StatefulWidget {
 }
 
 class _UserListScreenState extends State<UserListScreen> {
-  late UserSocketService userSocket;
+  final userSocket = UserSocketService.instance;
   late Future<List<UserWithLastMessage>> _future;
   late Future<User> _profileFuture;
   bool isVideoCall = true;
@@ -52,7 +52,7 @@ class _UserListScreenState extends State<UserListScreen> {
     _future = UserService(token: widget.token).getUsersWithLastMessage();
     _profileFuture = _fetchProfile();
 
-    userSocket = UserSocketService(
+    userSocket.init(
       serverUrl: '192.168.100.113:2340',
       token: widget.token,
       userId: widget.userId,
@@ -76,7 +76,11 @@ class _UserListScreenState extends State<UserListScreen> {
           }
         });
       },
-    )..connect();
+      onCallCancelled: () {
+        Navigator.pop(context);
+      },
+    );
+    userSocket.connect();
 
     userSocket.onMessage = (from, content, timestamp) {
       // If message is sent/received, refresh user list
@@ -355,9 +359,9 @@ class _UserListScreenState extends State<UserListScreen> {
       _future = UserService(token: widget.token).getUsersWithLastMessage();
     } catch (e) {
       // Handle error — show a snackbar or dialog if needed
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to add user: $e")),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text("Failed to add user: $e")),
+      // );
     }
   }
 
