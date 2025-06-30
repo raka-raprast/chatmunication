@@ -1,16 +1,37 @@
-# chatmunication
+# Chatmunication
+![Wireframe - 1](https://github.com/user-attachments/assets/6bbdea8b-e7a8-4f5b-8b36-c61a742b959a)
 
-A new Flutter project.
 
-## Getting Started
+**Chatmunication** is a Flutter-based mobile application designed to enable real-time communication, offering features like messaging, voice, and video calls. This project is currently under development.
 
-This project is a starting point for a Flutter application.
+## 🚀 Getting Started
 
-A few resources to get you started if this is your first Flutter project:
+To get started with this Flutter project:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Prerequisites
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- [Flutter SDK](https://docs.flutter.dev/get-started/install)
+- Dart SDK (usually bundled with Flutter)
+- A suitable IDE (e.g., VS Code, Android Studio)
+- A connected device or emulator
+
+### 🧱 Features
+✉️ Real-time messaging
+📞 Voice and video call support
+🔐 Firebase authentication
+🗂️ User profiles
+📲 Responsive UI across Android and iOS
+
+## 🛠 Backend
+
+This app is powered by a custom backend built with:
+
+- **Language**: [Go (Golang)](https://golang.org/)
+- **Real-time Communication**: WebSocket & [WebRTC](https://webrtc.org/)
+- **Signaling Server**: Custom implementation for managing WebRTC call setup
+- **Authentication**: Firebase Authentication (handled in the Flutter app)
+
+> The backend handles user presence, signaling for calls, and real-time messaging via WebSockets.
+
+🔗 You can find the backend code here: [github.com/raka-raprast/chatmunication-api](https://github.com/raka-raprast/chatmunication-api)
+
