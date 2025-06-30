@@ -323,46 +323,6 @@ class _MessageScreenState extends State<MessageScreen> {
           )
         ],
       ),
-      // appBar: AppBar(
-      //   title: Row(
-      //     children: [
-      //       CMAvatar(
-      //         profilePicture: widget.otherUser.profilePicture,
-      //         email: widget.otherUser.email ?? '',
-      //         username: widget.otherUser.username,
-      //       ),
-      //       SizedBox(width: 10),
-      //       Text(widget.otherUser.username),
-      //     ],
-      //   ),
-      //   actions: [
-      //     PopupMenuButton<String>(
-      //       onSelected: (value) {
-      //         if (value == 'voice') {
-      //           _startCall('audio');
-      //         } else if (value == 'video') {
-      //           _startCall('video');
-      //         }
-      //       },
-      //       itemBuilder: (context) => [
-      //         const PopupMenuItem(
-      //           value: 'voice',
-      //           child: ListTile(
-      //             leading: Icon(Icons.call),
-      //             title: Text('Voice Call'),
-      //           ),
-      //         ),
-      //         PopupMenuItem(
-      //           value: 'video',
-      //           child: ListTile(
-      //             leading: Icon(Icons.videocam),
-      //             title: Text('Video Call'),
-      //           ),
-      //         ),
-      //       ],
-      //     ),
-      //   ],
-      // ),
       body: CustomScrollView(
         slivers: [
           SliverFillRemaining(
@@ -381,7 +341,9 @@ class _MessageScreenState extends State<MessageScreen> {
                                 controller: _scrollController,
                                 itemCount: _messages.length,
                                 padding:
-                                    const EdgeInsets.symmetric(vertical: 10),
+                                    const EdgeInsets.symmetric(vertical: 10) +
+                                        EdgeInsets.only(
+                                            bottom: kToolbarHeight * 1.5),
                                 itemBuilder: (context, index) {
                                   final msg = _messages[index];
                                   if (_messages[index] is Map<String, String> &&
@@ -396,62 +358,78 @@ class _MessageScreenState extends State<MessageScreen> {
                               ),
                       ),
                 Positioned(
-                  bottom: 20,
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: SafeArea(
+                    child: Container(
+                      margin: EdgeInsets.symmetric(horizontal: 6),
+                      height: kToolbarHeight + 8,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(999),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 5,
+                            offset: Offset(0, 0),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: kBottomNavigationBarHeight * 1.1,
+                    color: Colors.white,
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
                   left: 0,
                   right: 0,
                   child: SafeArea(
                     top: false,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(999),
-                        color: Colors.white,
-                        gradient: LinearGradient(colors: [
-                          CMColors.primary.withValues(alpha: .1),
-                          CMColors.primaryVariant.withValues(alpha: .15),
-                        ]),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: CMTextField(
-                              controller: _controller,
-                              minLines: 1,
-                              maxLines: 7,
-                              keyboardType: TextInputType.multiline,
-                              textInputAction: TextInputAction.newline,
-                              label: 'Type a message...',
-                              decoration: InputDecoration(
-                                hintText: 'Type a message...',
-                                isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 12),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade400),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
+                      child: Container(
+                        margin: EdgeInsets.symmetric(horizontal: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(999),
+                          color: Colors.white,
+                          gradient: LinearGradient(colors: [
+                            CMColors.primary.withValues(alpha: .1),
+                            CMColors.primaryVariant.withValues(alpha: .15),
+                          ]),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: CMTextField(
+                                controller: _controller,
+                                minLines: 1,
+                                maxLines: 7,
+                                keyboardType: TextInputType.multiline,
+                                textInputAction: TextInputAction.newline,
+                                label: 'Type a message...',
+                                radius: 999,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          CircleAvatar(
-                            backgroundColor: _canSend
-                                ? Theme.of(context).primaryColor
-                                : Colors.grey.shade300,
-                            child: IconButton(
+                            const SizedBox(width: 8),
+                            IconButton(
                               icon: const Icon(Icons.send),
-                              color: _canSend ? Colors.white : Colors.black45,
+                              color: _canSend
+                                  ? CMColors.primaryVariant
+                                  : CMColors.hint,
                               onPressed: _canSend ? _sendMessage : null,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),

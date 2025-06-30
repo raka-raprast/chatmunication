@@ -4,6 +4,7 @@ class User {
   final String profilePicture;
   final String? token;
   final String? email;
+  final bool? isAdded;
 
   User({
     required this.id,
@@ -11,6 +12,7 @@ class User {
     required this.profilePicture,
     this.token,
     this.email,
+    this.isAdded,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,25 @@ class User {
       profilePicture: json['profile_picture'] ?? '',
       token: json['token'],
       email: json['email'],
+      isAdded: json['isAdded'] ?? json['addedYou'],
+    );
+  }
+
+  User copyWith({
+    String? id,
+    String? username,
+    String? profilePicture,
+    String? token,
+    String? email,
+    bool? isAdded,
+  }) {
+    return User(
+      id: id ?? this.id,
+      username: username ?? this.username,
+      profilePicture: profilePicture ?? this.profilePicture,
+      token: token ?? this.token,
+      email: email ?? this.email,
+      isAdded: isAdded ?? this.isAdded,
     );
   }
 }

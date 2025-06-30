@@ -1,4 +1,5 @@
 import 'package:chatmunication/shared/theme/colors.dart';
+import 'package:chatmunication/shared/theme/textstyle.dart';
 import 'package:flutter/material.dart';
 
 class CMTextField extends StatelessWidget {
@@ -20,6 +21,7 @@ class CMTextField extends StatelessWidget {
     this.isSmall = false,
     this.minLines,
     this.textInputAction,
+    this.textStyle,
   });
 
   final TextEditingController? controller;
@@ -38,6 +40,7 @@ class CMTextField extends StatelessWidget {
   final double? radius;
   final bool isSmall;
   final TextInputAction? textInputAction;
+  final TextStyle? textStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -51,10 +54,11 @@ class CMTextField extends StatelessWidget {
       keyboardType: keyboardType,
       onChanged: onChanged,
       textInputAction: textInputAction,
-      style: TextStyle(
-        color: CMColors.text,
-        fontSize: 16,
-      ),
+      style: textStyle ??
+          TextStyle(
+            color: CMColors.text,
+            fontSize: 16,
+          ),
       decoration: decoration ??
           InputDecoration(
             isDense: true,

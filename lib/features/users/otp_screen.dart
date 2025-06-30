@@ -1,5 +1,6 @@
 import 'package:chatmunication/shared/theme/colors.dart';
 import 'package:chatmunication/shared/theme/textstyle.dart';
+import 'package:chatmunication/shared/ui/components/appbar.dart';
 import 'package:chatmunication/shared/ui/components/back_button.dart';
 import 'package:chatmunication/shared/ui/components/scaffold.dart';
 import 'package:chatmunication/shared/ui/components/textfield.dart';
@@ -95,9 +96,9 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   Widget build(BuildContext context) {
     return CMScaffold(
-      floatingAppBar: AppBar(
+      floatingAppBar: CMFloatingAppBar(
+        isTransparent: true,
         leading: CMBackButton(),
-        backgroundColor: Colors.transparent,
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -129,6 +130,9 @@ class _OtpScreenState extends State<OtpScreen> {
                 return SizedBox(
                   width: 40,
                   child: CMTextField(
+                    textStyle: CMTextStyle.subtitle.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: CMColors.primaryVariant),
                     controller: controllers[index],
                     focusNode: focusNodes[index],
                     textAlign: TextAlign.center,

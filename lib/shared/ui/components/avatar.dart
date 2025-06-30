@@ -15,15 +15,15 @@ class CMAvatar extends StatelessWidget {
   final String username;
   final double size;
   final List<Color> colorList = [
-    const Color.fromARGB(255, 238, 152, 146),
-    const Color.fromARGB(255, 255, 192, 97),
+    const Color.fromARGB(255, 246, 188, 184),
+    const Color.fromARGB(255, 251, 221, 175),
     const Color.fromARGB(255, 255, 243, 139),
-    const Color.fromARGB(255, 163, 250, 166),
+    const Color.fromARGB(255, 190, 247, 192),
     const Color.fromARGB(255, 165, 250, 241),
-    Colors.blue,
-    const Color.fromARGB(255, 124, 139, 223),
+    const Color.fromARGB(255, 147, 204, 250),
+    const Color.fromARGB(255, 162, 172, 227),
     const Color.fromARGB(255, 225, 150, 238),
-    const Color.fromARGB(255, 224, 126, 159),
+    const Color.fromARGB(255, 255, 168, 197),
     const Color.fromARGB(255, 255, 191, 169),
   ];
   @override
@@ -40,27 +40,45 @@ class CMAvatar extends StatelessWidget {
     );
   }
 
+  String getFirstLetters(String input, {int cap = 3}) {
+    return input
+        .split(' ')
+        .where((word) => word.isNotEmpty)
+        .map((word) => word[0].toUpperCase())
+        .take(cap)
+        .join();
+  }
+
   Widget _buildAlphabetName() {
     return Stack(
       children: [
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(colors: [
-              email.isNotEmpty
-                  ? colorList[CMHelpers.getStringIndex(email)]
-                  : CMColors.primary.withValues(alpha: 0.1),
-              username.isNotEmpty
-                  ? colorList[CMHelpers.getStringIndex(username)]
-                  : CMColors.primaryVariant.withValues(alpha: 0.15),
+              CMColors.primary.withValues(alpha: 0.1),
+              CMColors.primaryVariant.withValues(alpha: 0.15)
+              // email.isNotEmpty
+              //     ? colorList[CMHelpers.getStringIndex(email)]
+              //     : CMColors.primary.withValues(alpha: 0.1),
+              // username.isNotEmpty
+              //     ? colorList[CMHelpers.getStringIndex(username)]
+              //     : CMColors.primaryVariant.withValues(alpha: 0.15),
             ]),
           ),
         ),
         Center(
-          child: Icon(
-            Icons.person,
-            color: CMColors.background,
-            size: 28,
+          child: Text(
+            getFirstLetters(username),
+            style: CMTextStyle.title.copyWith(
+              fontSize: size * .45,
+              color: CMColors.primaryVariant,
+            ),
           ),
+          // child: Icon(
+          //   Icons.person,
+          //   color: CMColors.primaryVariant,
+          //   size: size * .55,
+          // ),
         )
       ],
     );
