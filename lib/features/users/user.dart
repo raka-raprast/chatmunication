@@ -1,10 +1,33 @@
+/// Friend-request state between the authenticated user and another user.
+/// Messaging, voice, and video calls all require [accepted] — see the
+/// backend's AreFriends gate in signaling/users.go.
+enum ContactStatus {
+  none,
+  pendingSent,
+  pendingReceived,
+  accepted;
+
+  static ContactStatus fromJson(String? value) {
+    switch (value) {
+      case 'pending_sent':
+        return ContactStatus.pendingSent;
+      case 'pending_received':
+        return ContactStatus.pendingReceived;
+      case 'accepted':
+        return ContactStatus.accepted;
+      default:
+        return ContactStatus.none;
+    }
+  }
+}
+
 class User {
   final String id;
   final String username;
   final String profilePicture;
   final String? token;
   final String? email;
-  final bool? isAdded;
+  final ContactStatus contactStatus;
   final String? fcmToken;
 
   User({
@@ -13,7 +36,7 @@ class User {
     required this.profilePicture,
     this.token,
     this.email,
-    this.isAdded,
+    this.contactStatus = ContactStatus.none,
     this.fcmToken,
   });
 
@@ -24,7 +47,7 @@ class User {
       profilePicture: json['profile_picture'] ?? '',
       token: json['token'],
       email: json['email'],
-      isAdded: json['isAdded'] ?? json['addedYou'],
+      contactStatus: ContactStatus.fromJson(json['contactStatus']),
       fcmToken: json['fcm_token'],
     );
   }
@@ -35,7 +58,7 @@ class User {
     String? profilePicture,
     String? token,
     String? email,
-    bool? isAdded,
+    ContactStatus? contactStatus,
     String? fcmToken,
   }) {
     return User(
@@ -44,7 +67,7 @@ class User {
       profilePicture: profilePicture ?? this.profilePicture,
       token: token ?? this.token,
       email: email ?? this.email,
-      isAdded: isAdded ?? this.isAdded,
+      contactStatus: contactStatus ?? this.contactStatus,
       fcmToken: fcmToken ?? this.fcmToken,
     );
   }
@@ -58,15 +81,18 @@ class UserWithLastMessage {
   final String? email;
   final DateTime? lastMessageTimestamp;
   final bool? isSender;
+  final int unreadCount;
 
-  UserWithLastMessage(
-      {required this.id,
-      required this.username,
-      required this.profilePicture,
-      this.email,
-      this.lastMessageContent,
-      this.lastMessageTimestamp,
-      this.isSender});
+  UserWithLastMessage({
+    required this.id,
+    required this.username,
+    required this.profilePicture,
+    this.email,
+    this.lastMessageContent,
+    this.lastMessageTimestamp,
+    this.isSender,
+    this.unreadCount = 0,
+  });
 
   factory UserWithLastMessage.fromJson(Map<String, dynamic> json) {
     final lastMessage = json['lastMessage'];
@@ -80,6 +106,25 @@ class UserWithLastMessage {
           ? DateTime.parse(lastMessage['timestamp'])
           : null,
       isSender: lastMessage?['isSender'],
+      unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  UserWithLastMessage copyWith({
+    String? lastMessageContent,
+    DateTime? lastMessageTimestamp,
+    bool? isSender,
+    int? unreadCount,
+  }) {
+    return UserWithLastMessage(
+      id: id,
+      username: username,
+      profilePicture: profilePicture,
+      email: email,
+      lastMessageContent: lastMessageContent ?? this.lastMessageContent,
+      lastMessageTimestamp: lastMessageTimestamp ?? this.lastMessageTimestamp,
+      isSender: isSender ?? this.isSender,
+      unreadCount: unreadCount ?? this.unreadCount,
     );
   }
 }

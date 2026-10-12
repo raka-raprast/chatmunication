@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.6.1
+  sdk: ^3.13.4
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -35,20 +35,31 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   web_socket_channel: ^3.0.3
-  flutter_webrtc: ^0.9.47
+  flutter_webrtc: ^1.6.2+hotfix.3
   http: ^1.4.0
-  permission_handler: ^12.0.0+1
-  device_info_plus: ^10.0.0
+  # Capped at 12.x (latest: 13.0.2): permission_handler >=13.0.0 pulls
+  # permission_handler_android 14.x, which requires compileSdk = 37. This
+  # project's AGP version (9.1.0) caps compileSdk at 36 ("maximum
+  # recommended compile SDK version for Android Gradle plugin 9.1.0 is 36"
+  # per Gradle's own error) — installing platform android-37.0 locally does
+  # NOT lift this ceiling, it's an AGP-version limit, not a missing-SDK
+  # issue. Revisit once AGP is bumped past 9.1.0 (check its own compileSdk
+  # ceiling first) or permission_handler_android publishes a compileSdk-36
+  # compatible release.
+  permission_handler: ^12.0.3
+  device_info_plus: ^13.2.0
   shared_preferences: ^2.5.3
   intl: ^0.20.2
-  sign_in_button: ^4.0.1
+  sign_in_button: ^5.0.0
   flutter_spinkit: ^5.2.1
   flutter_ringtone_player: ^4.0.0+4
-  firebase_core: ^3.14.0
-  firebase_messaging: ^15.2.7
-  flutter_local_notifications: ^19.3.0
+  firebase_core: ^3.15.2
+  firebase_messaging: ^15.2.10
+  flutter_local_notifications: ^22.3.1
   callkeep: ^0.4.1
   uuid: ^4.5.1
+  phosphoricons_flutter: ^1.1.1
+  share_plus: ^13.3.1
 
 dev_dependencies:
   flutter_test:
@@ -59,7 +70,28 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
+
+# `callkeep` 0.4.1 is the latest published version on pub.dev, but its bundled
+# android/build.gradle calls the legacy `jcenter()` repository (removed
+# entirely in Gradle 9) and declares a stray legacy AGP 3.5.0 buildscript
+# classpath. Both break evaluation under this project's Gradle 9.3.1 / AGP
+# 9.1.0 toolchain. `third_party/callkeep` is an unmodified vendored copy of
+# callkeep 0.4.1 with only android/build.gradle patched to drop those two
+# blocks (see that file for details); everything else (Dart/iOS/Kotlin
+# sources) is untouched.
+# `flutter_ringtone_player` 4.0.0+4 (latest published) compiles against
+# android SDK 33; after this upgrade, other plugins pull in newer androidx
+# artifacts (activity 1.8.1, lifecycle 2.7.0, core 1.13.1) whose AAR metadata
+# requires every module in the graph to compile against API 34+, which AGP
+# enforces even though this module is otherwise unused by that check.
+# `third_party/flutter_ringtone_player` is a vendored copy with only
+# android/build.gradle's compileSdkVersion bumped 33 -> 36.
+dependency_overrides:
+  callkeep:
+    path: third_party/callkeep
+  flutter_ringtone_player:
+    path: third_party/flutter_ringtone_player
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

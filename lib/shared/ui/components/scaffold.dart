@@ -7,13 +7,17 @@ class CMScaffold extends StatelessWidget {
     this.floatingAppBar,
     this.body,
     this.useGradientBackground = true,
+    this.backgroundImage,
     this.bottomNavigationBar,
+    this.floatingActionButton,
   });
 
   final Widget? floatingAppBar;
   final Widget? body;
   final bool useGradientBackground;
+  final String? backgroundImage;
   final Widget? bottomNavigationBar;
+  final Widget? floatingActionButton;
 
   @override
   Widget build(BuildContext context) {
@@ -23,13 +27,19 @@ class CMScaffold extends StatelessWidget {
       color: useGradientBackground ? CMColors.background : Colors.white,
       child: Stack(
         children: [
-          if (useGradientBackground)
+          if (backgroundImage != null)
+            Positioned.fill(
+              child: Image.asset(backgroundImage!, fit: BoxFit.cover),
+            )
+          else if (useGradientBackground)
             Container(
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [
-                  CMColors.primary.withOpacity(0.1),
-                  CMColors.primaryVariant.withOpacity(0.15),
-                ]),
+                gradient: LinearGradient(
+                  colors: [
+                    CMColors.primary.withOpacity(0.1),
+                    CMColors.primaryVariant.withOpacity(0.15),
+                  ],
+                ),
               ),
             ),
 
@@ -46,8 +56,8 @@ class CMScaffold extends StatelessWidget {
                         child: floatingAppBar!,
                         height: (floatingAppBar is PreferredSizeWidget)
                             ? (floatingAppBar as PreferredSizeWidget)
-                                .preferredSize
-                                .height
+                                  .preferredSize
+                                  .height
                             : kToolbarHeight,
                       ),
                       floating: true,
@@ -64,22 +74,46 @@ class CMScaffold extends StatelessWidget {
               left: 0,
               right: 0,
               bottom: 20, // floating effect
-              child: Center(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(30),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 10,
-                        offset: Offset(0, -4),
+              child: Material(
+                type: MaterialType.transparency,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 10,
+                                offset: Offset(0, -4),
+                              ),
+                            ],
+                          ),
+                          child: bottomNavigationBar,
+                        ),
                       ),
+                      if (floatingActionButton != null) ...[
+                        const SizedBox(width: 12),
+                        floatingActionButton!,
+                      ],
                     ],
                   ),
-                  child: bottomNavigationBar,
                 ),
+              ),
+            )
+          // Standalone FAB (no bottom nav bar to sit beside) — standard
+          // bottom-right placement.
+          else if (floatingActionButton != null)
+            Positioned(
+              right: 20,
+              bottom: 20 + padding.bottom,
+              child: Material(
+                type: MaterialType.transparency,
+                child: floatingActionButton!,
               ),
             ),
         ],
@@ -100,10 +134,7 @@ class _FloatingAppBarDelegate extends SliverPersistentHeaderDelegate {
   final Widget child;
   final double height;
 
-  _FloatingAppBarDelegate({
-    required this.child,
-    required this.height,
-  });
+  _FloatingAppBarDelegate({required this.child, required this.height});
 
   @override
   double get minExtent => height;
@@ -113,7 +144,10 @@ class _FloatingAppBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return SizedBox.expand(child: child);
   }
 

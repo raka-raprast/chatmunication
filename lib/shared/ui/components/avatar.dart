@@ -4,12 +4,13 @@ import 'package:chatmunication/shared/utils/helpers.dart';
 import 'package:flutter/material.dart';
 
 class CMAvatar extends StatelessWidget {
-  CMAvatar(
-      {super.key,
-      required this.profilePicture,
-      required this.email,
-      required this.username,
-      this.size = 50});
+  CMAvatar({
+    super.key,
+    required this.profilePicture,
+    required this.email,
+    required this.username,
+    this.size = 50,
+  });
   final String profilePicture;
   final String email;
   final String username;
@@ -50,36 +51,39 @@ class CMAvatar extends StatelessWidget {
   }
 
   Widget _buildAlphabetName() {
+    final seed = username.isNotEmpty ? username : email;
+    final baseColor = seed.isNotEmpty
+        ? colorList[CMHelpers.getStringIndex(seed)]
+        : CMColors.primary;
+    final hsl = HSLColor.fromColor(baseColor);
+    final textColor = hsl
+        .withLightness((hsl.lightness - 0.35).clamp(0.0, 1.0))
+        .withSaturation((hsl.saturation + 0.15).clamp(0.0, 1.0))
+        .toColor();
+    final bgTop = Color.lerp(Colors.white, baseColor, 0.14)!;
+    final bgBottom = Color.lerp(Colors.white, baseColor, 0.32)!;
+
     return Stack(
       children: [
         Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [
-              CMColors.primary.withValues(alpha: 0.1),
-              CMColors.primaryVariant.withValues(alpha: 0.15)
-              // email.isNotEmpty
-              //     ? colorList[CMHelpers.getStringIndex(email)]
-              //     : CMColors.primary.withValues(alpha: 0.1),
-              // username.isNotEmpty
-              //     ? colorList[CMHelpers.getStringIndex(username)]
-              //     : CMColors.primaryVariant.withValues(alpha: 0.15),
-            ]),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [bgTop, bgBottom],
+            ),
           ),
         ),
         Center(
           child: Text(
-            getFirstLetters(username),
+            getFirstLetters(username, cap: 1),
             style: CMTextStyle.title.copyWith(
               fontSize: size * .45,
-              color: CMColors.primaryVariant,
+              fontWeight: FontWeight.w700,
+              color: textColor,
             ),
           ),
-          // child: Icon(
-          //   Icons.person,
-          //   color: CMColors.primaryVariant,
-          //   size: size * .55,
-          // ),
-        )
+        ),
       ],
     );
   }

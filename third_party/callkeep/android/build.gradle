@@ -1,0 +1,39 @@
+group 'com.github.cloudwebrtc.flutter_callkeep'
+version '1.0'
+
+// NOTE (vendored fork for chatmunication upgrade to Gradle 9 / AGP 9.1.0):
+// The upstream pub.dev callkeep 0.4.1 (latest published version, no newer
+// release exists) declared its own `buildscript { classpath
+// 'com.android.tools.build:gradle:3.5.0' }` and a `rootProject.allprojects`
+// repositories block, both calling the legacy `jcenter()` repository, which
+// Gradle 9 removed entirely (JCenter has been shut down for years). Both
+// blocks are redundant anyway since the app's root android/build.gradle
+// already applies `com.android.application`/`com.android.library` centrally
+// (AGP 9.1.0) and configures `google()`/`mavenCentral()` for all subprojects.
+// Removed here so `:callkeep` evaluates under Gradle 9 without touching
+// anything else from the upstream module.
+
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 35
+    namespace 'com.github.cloudwebrtc.flutter_callkeep'
+
+    defaultConfig {
+        minSdkVersion 21
+    }
+    lintOptions {
+        disable 'InvalidPackage'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'com.android.support:support-v4:28.0.0'
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+    implementation 'com.android.support:support-core-utils:28.0.0'
+    implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.0.0'
+}

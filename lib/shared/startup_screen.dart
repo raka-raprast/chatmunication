@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:chatmunication/features/auth/ui/auth_screen.dart';
+import 'package:chatmunication/features/onboarding/onboarding_screen.dart';
 import 'package:chatmunication/features/users/user.dart';
 import 'package:chatmunication/features/users/user_list_screen.dart';
 import 'package:chatmunication/shared/theme/colors.dart';
@@ -39,18 +40,22 @@ class _StartupScreenState extends State<StartupScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => UserListScreen(
-            token: user.token ?? '',
-            userId: user.id,
-          ),
+          builder: (_) =>
+              UserListScreen(token: user.token ?? '', userId: user.id),
         ),
       );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const AuthScreen()),
-      );
+      return;
     }
+
+    final onboardingComplete = prefs.getBool(onboardingCompleteKey) ?? false;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            onboardingComplete ? const AuthScreen() : const OnboardingScreen(),
+      ),
+    );
   }
 
   @override
@@ -70,11 +75,7 @@ class _StartupScreenState extends State<StartupScreen> {
                 ),
               ],
             ),
-            Center(
-              child: SpinKitFoldingCube(
-                color: CMColors.primaryVariant,
-              ),
-            ),
+            Center(child: SpinKitFoldingCube(color: CMColors.primaryVariant)),
           ],
         ),
       ),

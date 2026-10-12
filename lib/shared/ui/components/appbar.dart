@@ -1,16 +1,12 @@
 import 'package:chatmunication/shared/theme/colors.dart';
-import 'package:chatmunication/shared/ui/components/textfield.dart';
 import 'package:flutter/material.dart';
 
 class CMFloatingAppBar extends StatelessWidget implements PreferredSizeWidget {
   final double height;
-  final bool isSearch;
   final Widget? title;
   final Widget? leading;
   final List<Widget>? actions;
   final bool isTransparent;
-  final TextEditingController? controller;
-  final Function(String query)? onChanged;
 
   const CMFloatingAppBar({
     super.key,
@@ -19,21 +15,7 @@ class CMFloatingAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.leading,
     this.actions,
     this.isTransparent = false,
-    this.controller,
-    this.onChanged,
-  }) : isSearch = false;
-
-  const CMFloatingAppBar.search({
-    super.key,
-    this.height = kToolbarHeight,
-    this.isTransparent = false,
-    this.controller,
-    this.onChanged,
-  })  : isSearch = true,
-        title = null,
-        leading = null,
-        actions = null;
-
+  });
   @override
   Size get preferredSize => Size.fromHeight(height);
 
@@ -72,56 +54,42 @@ class CMFloatingAppBar extends StatelessWidget implements PreferredSizeWidget {
             borderRadius: BorderRadius.circular(999),
             gradient: isTransparent
                 ? null
-                : LinearGradient(colors: [
-                    CMColors.primary.withValues(alpha: .1),
-                    CMColors.primaryVariant.withValues(alpha: .15),
-                  ]),
+                : LinearGradient(
+                    colors: [
+                      CMColors.primary.withValues(alpha: .1),
+                      CMColors.primaryVariant.withValues(alpha: .15),
+                    ],
+                  ),
           ),
           alignment: Alignment.centerLeft,
-          child: isSearch
-              ? SizedBox(
-                  height: 35,
-                  child: CMTextField(
-                    controller: controller,
-                    onChanged: onChanged,
-                    isSmall: true,
-                    radius: 999,
-                    label: 'Search by username or email',
-                    prefix: Icon(
-                      Icons.search,
-                      color: CMColors.primaryVariant,
-                      size: 24,
-                    ),
+          child: Row(
+            children: [
+              if (leading != null) leading!,
+              if (title != null)
+                Expanded(
+                  child: DefaultTextStyle(
+                    style: Theme.of(context).textTheme.titleMedium!
+                        .copyWith(fontWeight: FontWeight.w600),
+                    overflow: TextOverflow.ellipsis,
+                    child: title!,
                   ),
                 )
-              : Row(
-                  children: [
-                    if (leading != null) leading!,
-                    if (title != null)
-                      Expanded(
-                        child: DefaultTextStyle(
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium!
-                              .copyWith(fontWeight: FontWeight.w600),
-                          overflow: TextOverflow.ellipsis,
-                          child: title!,
+              else
+                const Spacer(), // push actions to the right even if title is null
+              if (actions != null)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: actions!
+                      .map(
+                        (action) => Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: action,
                         ),
                       )
-                    else
-                      const Spacer(), // push actions to the right even if title is null
-                    if (actions != null)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: actions!
-                            .map((action) => Padding(
-                                  padding: const EdgeInsets.only(left: 8),
-                                  child: action,
-                                ))
-                            .toList(),
-                      ),
-                  ],
+                      .toList(),
                 ),
+            ],
+          ),
         ),
       ],
     );

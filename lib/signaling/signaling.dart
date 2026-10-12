@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -71,10 +72,7 @@ class Signaling {
 
     _peerConnection.onIceCandidate = (candidate) {
       if (candidate != null) {
-        _send({
-          'type': 'candidate',
-          'candidate': candidate.toMap(),
-        });
+        _send({'type': 'candidate', 'candidate': candidate.toMap()});
       }
     };
 
@@ -106,7 +104,8 @@ class Signaling {
     });
 
     print(
-        "🎥 Got local stream. Video tracks: ${stream.getVideoTracks().length}");
+      "🎥 Got local stream. Video tracks: ${stream.getVideoTracks().length}",
+    );
     if (callType == 'video') {
       localRenderer.srcObject = stream;
     }
@@ -120,7 +119,9 @@ class Signaling {
 
   void resetRemoteRenderer() {
     _otherReady = false;
-    remoteRenderer.srcObject = null;
+    if (callType == 'video') {
+      remoteRenderer.srcObject = null;
+    }
     remoteStreamReady.value = false;
   }
 
@@ -147,16 +148,18 @@ class Signaling {
         break;
 
       case 'offer':
-        await _peerConnection
-            .setRemoteDescription(RTCSessionDescription(data['sdp'], 'offer'));
+        await _peerConnection.setRemoteDescription(
+          RTCSessionDescription(data['sdp'], 'offer'),
+        );
         final answer = await _peerConnection.createAnswer();
         await _peerConnection.setLocalDescription(answer);
         _send({'type': 'answer', 'sdp': answer.sdp});
         break;
 
       case 'answer':
-        await _peerConnection
-            .setRemoteDescription(RTCSessionDescription(data['sdp'], 'answer'));
+        await _peerConnection.setRemoteDescription(
+          RTCSessionDescription(data['sdp'], 'answer'),
+        );
         break;
 
       case 'candidate':
@@ -180,7 +183,8 @@ class Signaling {
   Future<void> makeOffer() async {
     final offer = await _peerConnection.createOffer();
     print(
-        "📨 Sending offer: ${offer.sdp?.contains("m=video") == true ? "includes video" : "NO VIDEO"}");
+      "📨 Sending offer: ${offer.sdp?.contains("m=video") == true ? "includes video" : "NO VIDEO"}",
+    );
 
     await _peerConnection.setLocalDescription(offer);
     _send({'type': 'offer', 'sdp': offer.sdp});

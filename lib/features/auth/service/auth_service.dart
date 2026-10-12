@@ -1,17 +1,23 @@
 import 'dart:convert';
 import 'dart:developer';
+
 import 'package:chatmunication/features/users/otp_screen.dart';
 import 'package:chatmunication/features/users/user.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:chatmunication/shared/config/app_config.dart';
+import 'package:chatmunication/shared/fcm.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  final String baseUrl = 'http://192.168.100.113:2340/auth';
+  final String baseUrl = AppConfig.authBaseUrl;
 
-  Future<User?> register(BuildContext context, String username, String password,
-      String email) async {
+  Future<User?> register(
+    BuildContext context,
+    String username,
+    String password,
+    String email,
+  ) async {
     final res = await http.post(
       Uri.parse('$baseUrl/register'),
       headers: {'Content-Type': 'application/json'},
@@ -29,7 +35,8 @@ class AuthService {
           ? Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => OtpScreen(identifier: username),
+                builder: (_) =>
+                    OtpScreen(identifier: username, password: password),
               ),
             )
           : null;
@@ -42,10 +49,7 @@ class AuthService {
     final res = await http.post(
       Uri.parse('$baseUrl/login'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'identifier': identifier,
-        'password': password,
-      }),
+      body: jsonEncode({'identifier': identifier, 'password': password}),
     );
 
     return res.statusCode == 200;
@@ -55,10 +59,7 @@ class AuthService {
     final res = await http.post(
       Uri.parse('$baseUrl/verify-otp'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'identifier': identifier,
-        'otp': otp,
-      }),
+      body: jsonEncode({'identifier': identifier, 'otp': otp}),
     );
 
     if (res.statusCode == 200) {
@@ -74,11 +75,12 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user', jsonEncode(userData));
 
-      final fcmToken = await FirebaseMessaging.instance.getToken();
+      final fcmToken = await getFcmToken();
       if (fcmToken != null) {
         await http.put(
           Uri.parse(
-              'http://192.168.100.113:2340/api/users/${userData['id']}/fcm-token'),
+            '${AppConfig.apiBaseUrl}/users/${userData['id']}/fcm-token',
+          ),
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ${userData['token']}',

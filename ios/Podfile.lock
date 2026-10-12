@@ -1,0 +1,28 @@
+PODS:
+  - callkeep (0.0.1):
+    - Flutter
+  - Flutter (1.0.0)
+  - flutter_ringtone_player (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - callkeep (from `.symlinks/plugins/callkeep/ios`)
+  - Flutter (from `Flutter`)
+  - flutter_ringtone_player (from `.symlinks/plugins/flutter_ringtone_player/ios`)
+
+EXTERNAL SOURCES:
+  callkeep:
+    :path: ".symlinks/plugins/callkeep/ios"
+  Flutter:
+    :path: Flutter
+  flutter_ringtone_player:
+    :path: ".symlinks/plugins/flutter_ringtone_player/ios"
+
+SPEC CHECKSUMS:
+  callkeep: 5844c80182e1d8b3679bfd474a47009978abcfb8
+  Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
+  flutter_ringtone_player: a77c42464250845611eaa44c27e8714acc800138
+
+PODFILE CHECKSUM: 53a6aebc29ccee84c41f92f409fc20cd4ca011f1
+
+COCOAPODS: 1.16.2

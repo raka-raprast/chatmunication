@@ -17,6 +17,8 @@ class CMTextField extends StatelessWidget {
     this.maxLines,
     this.maxLength,
     this.onChanged,
+    this.onTap,
+    this.readOnly = false,
     this.radius,
     this.isSmall = false,
     this.minLines,
@@ -37,6 +39,8 @@ class CMTextField extends StatelessWidget {
   final int? minLines;
   final int? maxLength;
   final Function(String)? onChanged;
+  final VoidCallback? onTap;
+  final bool readOnly;
   final double? radius;
   final bool isSmall;
   final TextInputAction? textInputAction;
@@ -53,17 +57,18 @@ class CMTextField extends StatelessWidget {
       maxLength: maxLength,
       keyboardType: keyboardType,
       onChanged: onChanged,
+      onTap: onTap,
+      readOnly: readOnly,
       textInputAction: textInputAction,
-      style: textStyle ??
-          TextStyle(
-            color: CMColors.text,
-            fontSize: 16,
-          ),
-      decoration: decoration ??
+      style: textStyle ?? TextStyle(color: CMColors.text, fontSize: 16),
+      decoration:
+          decoration ??
           InputDecoration(
             isDense: true,
             contentPadding: EdgeInsets.symmetric(
-                vertical: isSmall ? 2 : 12, horizontal: 16),
+              vertical: isSmall ? 2 : 12,
+              horizontal: 16,
+            ),
             hintText: label,
             filled: true,
             fillColor: CMColors.surface,

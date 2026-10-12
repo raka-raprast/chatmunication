@@ -1,15 +1,22 @@
+import 'dart:convert';
+
 import 'package:chatmunication/features/auth/ui/auth_screen.dart';
 import 'package:chatmunication/features/users/incoming_call_screen.dart';
+import 'package:chatmunication/features/users/user.dart';
+import 'package:chatmunication/features/users/user_list_screen.dart';
 import 'package:chatmunication/firebase_options.dart';
+import 'package:chatmunication/shared/in_app_notification.dart';
+import 'package:chatmunication/shared/local_notifications.dart';
+import 'package:chatmunication/shared/navigation.dart';
 import 'package:chatmunication/shared/startup_screen.dart';
 import 'package:chatmunication/signaling/user_socket.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:callkeep/callkeep.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final callKeep = FlutterCallkeep();
 final Map<String, Map<String, dynamic>> _callDataMap = {};
 
@@ -88,12 +95,33 @@ void _onEndCall(CallKeepPerformEndCallAction event) {
   // Optional: navigate back or show a toast if needed
 }
 
+/// Navigates to the chat list using the persisted session, if any — used
+/// when the user taps a message notification (foreground local alert, or
+/// a background/terminated FCM push) rather than opening the app cold.
+Future<void> _navigateToChatList() async {
+  final prefs = await SharedPreferences.getInstance();
+  final userJson = prefs.getString('user');
+  if (userJson == null) return;
+
+  final user = User.fromJson(jsonDecode(userJson));
+  navigatorKey.currentState?.pushAndRemoveUntil(
+    MaterialPageRoute(
+      builder: (_) =>
+          UserListScreen(token: user.token ?? '', userId: user.id),
+    ),
+    (route) => false,
+  );
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  await LocalNotifications.init(
+    onTap: (fromUserId) => _navigateToChatList(),
+  );
   await setupFCM();
   runApp(const MyApp());
 }
@@ -124,19 +152,16 @@ Future<void> setupFCM() async {
 
   if (settings.authorizationStatus == AuthorizationStatus.authorized) {
     print('✅ FCM permission granted');
-
-    // 🔐 Get the FCM token
-    String? fcmToken = await messaging.getToken();
-    print("📱 FCM Token: $fcmToken");
-
-    // TODO: send this token to your server for future calls
   } else {
     print('❌ FCM permission declined');
   }
 
-  // 🎯 Handle foreground messages
+  // 🎯 Handle foreground messages. Background/terminated delivery is
+  // handled by the OS automatically (the server sends a `notification`
+  // payload), so this only covers the app-is-open case.
   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
     final data = message.data;
+
     if (data['type'] == 'incoming_call') {
       final callUUID = const Uuid().v4();
 
@@ -154,12 +179,28 @@ Future<void> setupFCM() async {
           'token': '', // add token if needed
         },
       );
+    } else if (data['type'] == 'chat_message') {
+      // Only reaches the client via FCM when the server already decided
+      // the recipient's socket wasn't connected (see
+      // signaling.SendChatMessage) — e.g. a brief reconnect gap while the
+      // app is still foregrounded. Show the same in-app banner the
+      // socket path would have triggered.
+      final fromUserId = data['from'];
+      if (fromUserId == null) return;
+      InAppNotificationBanner.show(
+        title: message.notification?.title ?? 'New message',
+        message: message.notification?.body ?? '',
+        profilePicture: '',
+        onTap: _navigateToChatList,
+      );
     }
   });
 
-  // 🔁 Handle when app is opened from background or terminated
+  // 🔁 Handle when the app is opened by tapping a background/terminated
+  // notification.
   FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    print('🚪 App opened via notification');
-    // TODO: Navigate to call screen
+    if (message.data['type'] == 'chat_message') {
+      _navigateToChatList();
+    }
   });
 }
