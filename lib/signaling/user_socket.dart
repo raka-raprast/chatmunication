@@ -207,7 +207,7 @@ class UserSocketService {
     _reconnectTimer?.cancel();
     _subscription?.cancel();
 
-    final uri = Uri.parse('ws://$serverUrl/user-socket?userId=$userId');
+    final uri = Uri.parse('$serverUrl/user-socket?userId=$userId');
     final channel = WebSocketChannel.connect(uri);
     _channel = channel;
 

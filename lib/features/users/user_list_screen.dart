@@ -100,7 +100,7 @@ class _UserListScreenState extends State<UserListScreen> {
     _profileFuture = _fetchProfile();
 
     userSocket.init(
-      serverUrl: AppConfig.apiHost,
+      serverUrl: AppConfig.wsBaseUrl,
       token: widget.token,
       userId: widget.userId,
       onIncomingCall: _onIncomingCall,
