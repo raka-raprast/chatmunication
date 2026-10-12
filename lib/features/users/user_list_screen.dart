@@ -97,7 +97,13 @@ class _UserListScreenState extends State<UserListScreen> {
     _loadUsers();
     _loadGroups();
     _loadPendingRequestsCount();
-    _profileFuture = _fetchProfile();
+    // `catchError` here is purely to mark this future as "observed" so
+    // Dart's zone doesn't log a spurious "Unhandled Exception" for it —
+    // the Profile tab's own `FutureBuilder` (which attaches its own,
+    // real listener only once that tab is actually built/visible) still
+    // gets and handles the same error normally via `snapshot.error`.
+    _profileFuture = _fetchProfile()
+      ..catchError((_) => User(id: '', username: '', profilePicture: ''));
 
     userSocket.init(
       serverUrl: AppConfig.wsBaseUrl,
@@ -417,6 +423,19 @@ class _UserListScreenState extends State<UserListScreen> {
         .then((_) => _isInCallScreen = false);
   }
 
+  /// On a genuine network/server error, lets the Profile tab's
+  /// `FutureBuilder` show its "Retry" affordance (unchanged). On 401
+  /// (missing/expired/invalid-signature token — `JWTAuthMiddleware`) or
+  /// 404 (a validly-signed token whose `user_id` no longer exists —
+  /// `Me()` itself, after the middleware passes), though, retrying is
+  /// pointless: the stored session can never resolve to a real logged-in
+  /// user against whatever backend this build is pointed at. The 404
+  /// case is exactly what happens after switching `AppConfig`'s target
+  /// backend (or DB) out from under an already-cached session — fail
+  /// that out to a hard logout instead of leaving the user stuck on a
+  /// screen whose profile tab (and `/user-socket` connection, which
+  /// hits this same "unknown user" wall and reconnect-loops forever)
+  /// can never recover without a fresh login.
   Future<User> _fetchProfile() async {
     final response = await http.get(
       Uri.parse('${AppConfig.authBaseUrl}/me'),
@@ -425,9 +444,12 @@ class _UserListScreenState extends State<UserListScreen> {
 
     if (response.statusCode == 200) {
       return User.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception('Failed to load profile');
     }
+    if (response.statusCode == 401 || response.statusCode == 404) {
+      if (mounted) _logout();
+      throw Exception('Session expired');
+    }
+    throw Exception('Failed to load profile');
   }
 
   void _onCallRejected() {
